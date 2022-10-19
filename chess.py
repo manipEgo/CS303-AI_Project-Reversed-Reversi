@@ -10,6 +10,14 @@ COLOR_NONE=0
 random.seed(0)
 
 directions = ([1,0], [1,1], [0,1], [-1, 1], [-1, 0], [-1, -1], [0, -1], [1, -1])
+Vmap = np.array([[500,-25,10,5,5,10,-25,500],
+                    [-25,-45,1,1,1,1,-45,-25],
+                    [10,1,3,2,2,3,1,10],
+                    [5,1,2,1,1,2,1,5],
+                    [5,1,2,1,1,2,1,5],
+                    [10,1,3,2,2,3,1,10],
+                    [-25,-45,1,1,1,1,-45,-25],
+                    [500,-25,10,5,5,10,-25,500]])
 
 class AI(object):
         def __init__(self, chessboard_size, color, time_out):
@@ -41,6 +49,10 @@ class AI(object):
                         and chessboard[row][col] == COLOR_NONE:
                         move_list.append((row, col))
             return move_list
+        
+        def evaluation(self, chessboard, color):
+            f_rows, f_cols = np.where(chessboard == color)
+            return np.sum(Vmap[f_rows, f_cols])
 
         # @jit()
         def go(self, chessboard):
