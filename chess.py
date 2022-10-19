@@ -1,3 +1,4 @@
+from cmath import inf
 import numpy as np
 import random
 
@@ -17,21 +18,38 @@ class AI(object):
             self.time_out = time_out
             self.candidate_list = []
             self.candidate_set = []
-
-        # @jit()
-        def go(self, chessboard):
-            self.candidate_list.clear()
-            # =================================================== #
-            f_rows, f_cols = np.where(chessboard == self.color)
+            self.max_weight = -inf
+        
+        def available_moves(self, chessboard, color):
+            move_list = []
+            f_rows, f_cols = np.where(chessboard == color)
             for i in range(len(f_rows)):
                 for drct in directions:
                     row = f_rows[i] + drct[0]
                     col = f_cols[i] + drct[1]
-                    if row < 0 or col < 0 or row >= self.chessboard_size or col >= self.chessboard_size or chessboard[row][col] != -self.color:
+                    if row < 0 or row >= self.chessboard_size or\
+                        col < 0 or col >= self.chessboard_size or\
+                        chessboard[row][col] != -color:
                         continue
-                    while row >= 0 and col >= 0 and row < self.chessboard_size and col < self.chessboard_size and chessboard[row][col] == -self.color:    
+                    while row >= 0 and row < self.chessboard_size and\
+                        col >= 0 and col < self.chessboard_size and\
+                        chessboard[row][col] == -color:    
                         row += drct[0]
                         col += drct[1]
-                    if row >= 0 and col >= 0 and row < self.chessboard_size and col < self.chessboard_size and chessboard[row][col] == COLOR_NONE:
-                        self.candidate_list.append((row, col))
-            # =================================================== #
+                    if row >= 0 and row < self.chessboard_size\
+                        and col >= 0 and col < self.chessboard_size\
+                        and chessboard[row][col] == COLOR_NONE:
+                        move_list.append((row, col))
+            return move_list
+
+        # @jit()
+        def go(self, chessboard):
+            
+            # init
+            self.candidate_list.clear()
+            self.candidate_set.clear()
+            self.max_weight = -inf
+            
+            # all root candidates
+            self.candidate_list = self.available_moves(chessboard, self.color)
+            self.candidate_set = self.candidate_list.copy()
