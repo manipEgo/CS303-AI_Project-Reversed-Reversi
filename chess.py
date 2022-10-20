@@ -5,6 +5,7 @@ import random
 
 #from numba import jit
 
+# CONSTANTS
 COLOR_BLACK = -1
 COLOR_WHITE = 1
 COLOR_NONE = 0
@@ -32,12 +33,22 @@ BIN2INDEX = {1: (0, 0), 2: (0, 1), 4: (0, 2), 8: (0, 3), 16: (0, 4), 32: (0, 5),
              281474976710656: (6, 0), 562949953421312: (6, 1), 1125899906842624: (6, 2), 2251799813685248: (6, 3), 4503599627370496: (6, 4), 9007199254740992: (6, 5), 18014398509481984: (6, 6), 36028797018963968: (6, 7),
              72057594037927936: (7, 0), 144115188075855872: (7, 1), 288230376151711744: (7, 2), 576460752303423488: (7, 3), 1152921504606846976: (7, 4), 2305843009213693952: (7, 5), 4611686018427387904: (7, 6), 9223372036854775808: (7, 7)}
 
-SEARCH_DEPTH = 10
-random.seed(0)
+# SUPER PARAMETERS
+OPENIN_DEPTH = 10
+MIDWAY_DEPTH = 8
+MSMALL_DEPTH = 4
+ENDING_DEPTH = 14
+
+OPENIN_COUNT = 10
+MIDWAY_COUNT = 45
+ENDING_COUNT = 50
+
 values = np.array([-500, 25, -10, -5,
                         45, -1, -1,
                             -3, -2,
                                 -1])
+
+random.seed(0)
 
 class AI(object):
         def __init__(self, chessboard_size, color, time_out):
@@ -47,6 +58,7 @@ class AI(object):
             self.candidate_list = []
             self.candidate_set = []
             self.max_weight = -inf
+            self.current_search_depth = OPENIN_DEPTH
             self.start_time = 0.0
         
         def bin_to_index(self, bin_pos):
@@ -154,7 +166,7 @@ class AI(object):
             return result
 
         def max_value(self, own_chess, opo_chess, alpha, beta, depth):
-            if depth == SEARCH_DEPTH or self.time_out - time.process_time() + self.start_time < 0.005:
+            if depth == self.current_search_depth or self.time_out - time.process_time() + self.start_time < 0.005:
                 return self.evaluation(own_chess), None
             movables = self.bin_available_moves(own_chess, opo_chess)
             if len(movables) == 0:
@@ -173,7 +185,7 @@ class AI(object):
             return step_value, step_move
         
         def min_value(self, own_chess, opo_chess, alpha, beta, depth):
-            if depth == SEARCH_DEPTH or self.time_out - time.process_time() + self.start_time < 0.005:
+            if depth == self.current_search_depth or self.time_out - time.process_time() + self.start_time < 0.005:
                 return self.evaluation(own_chess)
             movables = self.bin_available_moves(opo_chess, own_chess)
             if len(movables) == 0:
@@ -209,6 +221,18 @@ class AI(object):
             for move in self.candidate_set:
                 self.candidate_list.append(self.bin_to_index(move))
             
+            # decide depth
+            chess_count = self.count_bin_ones(own_chess) + self.count_bin_ones(opo_chess)
+            if chess_count < OPENIN_COUNT and POS_VALUES[0] & own_chess == 0 and POS_VALUES[0] & opo_chess == 0:
+                self.current_search_depth = OPENIN_DEPTH
+            elif chess_count > ENDING_COUNT:
+                self.current_search_depth = ENDING_DEPTH
+            elif chess_count > MIDWAY_COUNT:
+                self.current_search_depth = MSMALL_DEPTH
+            else:
+                self.current_search_depth = MIDWAY_DEPTH
+            
+            # search
             value, move = self.max_value(own_chess, opo_chess, -inf, inf, 0)
             if move != None:
                 self.candidate_list.append(self.bin_to_index(move))
