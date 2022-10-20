@@ -35,8 +35,8 @@ BIN2INDEX = {1: (0, 0), 2: (0, 1), 4: (0, 2), 8: (0, 3), 16: (0, 4), 32: (0, 5),
 
 # SUPER PARAMETERS
 STATE_NUM = 4
-COUNT_LIST = [10, 45, 50]
-DEPTH_LIST = [10, 8, 4, 14]
+COUNT_LIST = [10, 45, 50, 64]
+DEPTH_LIST = [11, 9, 8, 14]
 BOARD_WEIGHT_LIST = [1, 1, 1, 1]
 MOVE_WEIGHT_LIST = [10, 30, 40, 5]
 
