@@ -14,14 +14,14 @@ random.seed(0)
 
 bin_direct = {"up": 8, "down": 8, "left": 1, "right": 1, "up-left": 9, "up-right": 7, "down-left": 7, "down-right": 9}
 
-Vmap = np.array([[500,-25,10,5,5,10,-25,500],
-                    [-25,-45,1,1,1,1,-45,-25],
-                    [10,1,3,2,2,3,1,10],
-                    [5,1,2,1,1,2,1,5],
-                    [5,1,2,1,1,2,1,5],
-                    [10,1,3,2,2,3,1,10],
-                    [-25,-45,1,1,1,1,-45,-25],
-                    [500,-25,10,5,5,10,-25,500]])
+values = np.array([500, -25, 10, 5,
+                        -45, 1, 1,
+                            3, 2,
+                                1])
+
+pos_values = [9295429630892703873, 4792111478498951490, 2594215222373842980,
+              1729382813125312536, 18577348462920192, 10205666933351424,
+              6755684016199680, 39582420959232, 26543503441920, 103481868288]
 
 index2bin = np.array([[1, 2, 4, 8, 16, 32, 64, 128],
                       [256, 512, 1024, 2048, 4096, 8192, 16384, 32768],
@@ -142,9 +142,18 @@ class AI(object):
                 current_pos <<= 1
             return move_list
         
-        def evaluation(self, chessboard, color):
-            f_rows, f_cols = np.where(chessboard == color)
-            return np.sum(Vmap[f_rows, f_cols])
+        def count_bin_ones(self, num):
+            count = 0
+            while(num > 0):
+                count += 1
+                num &= num - 1
+            return count
+        
+        def evaluation(self, own_chess):
+            result = 0
+            for i in range(11):
+                result += self.count_bin_ones(pos_values[i] & own_chess) * values[i]
+            return result
 
         # @jit()
         def go(self, chessboard):
@@ -155,9 +164,9 @@ class AI(object):
             self.max_weight = -inf
             
             # all root candidates
-            black_chess, white_chess = self.board_to_bin(chessboard)
             if self.color == COLOR_BLACK:
-                self.candidate_list = self.bin_available_moves(black_chess, white_chess)
+                own_chess, opo_chess = self.board_to_bin(chessboard)
             else:
-                self.candidate_list = self.bin_available_moves(white_chess, black_chess)
+                opo_chess, own_chess = self.board_to_bin(chessboard)
+            self.candidate_list = self.bin_available_moves(own_chess, opo_chess)
             self.candidate_set = self.candidate_list.copy()
