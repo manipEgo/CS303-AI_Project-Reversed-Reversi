@@ -1,4 +1,5 @@
 from cmath import inf
+import time
 import numpy as np
 import random
 
@@ -10,14 +11,15 @@ COLOR_NONE=0
 MAX_BIN_CHESS = 1 << 63
 LEFT_BOUND = (1) | (1<<8) | (1<<16) | (1<<24) | (1<<32) | (1<<40) | (1<<48) | (1<<56)
 RIGHT_BOUND = (1<<7) | (1<<15) | (1<<23) | (1<<31) | (1<<39) | (1<<47) | (1<<55) | (1<<63)
+SEARCH_DEPTH = 10
 random.seed(0)
 
 bin_direct = {"up": 8, "down": 8, "left": 1, "right": 1, "up-left": 9, "up-right": 7, "down-left": 7, "down-right": 9}
 
-values = np.array([500, -25, 10, 5,
-                        -45, 1, 1,
-                            3, 2,
-                                1])
+values = np.array([-500, 25, -10, -5,
+                        45, -1, -1,
+                            -3, -2,
+                                -1])
 
 pos_values = [9295429630892703873, 4792111478498951490, 2594215222373842980,
               1729382813125312536, 18577348462920192, 10205666933351424,
@@ -49,6 +51,7 @@ class AI(object):
             self.candidate_list = []
             self.candidate_set = []
             self.max_weight = -inf
+            self.start_time = 0.0
         
         def bin_to_index(self, bin_pos):
             return bin2index[bin_pos]
@@ -68,7 +71,7 @@ class AI(object):
             return black_chess, white_chess
         
         def bin_available_moves(self, own_chess, opo_chess):
-            move_list = []
+            bin_move_list = []
             current_pos = 1
             check_pos = 0
             while current_pos <= MAX_BIN_CHESS:
@@ -79,7 +82,7 @@ class AI(object):
                         while check_pos > 0 and check_pos & opo_chess > 0:
                             check_pos >>= bin_direct["up"]
                         if check_pos > 0 and check_pos & own_chess == 0 and check_pos & opo_chess == 0:
-                            move_list.append(self.bin_to_index(check_pos))
+                            bin_move_list.append(check_pos)
                     
                     #2 go down
                     check_pos = current_pos << bin_direct["down"]
@@ -87,7 +90,7 @@ class AI(object):
                         while check_pos <= MAX_BIN_CHESS and check_pos & opo_chess > 0:
                             check_pos <<= bin_direct["down"]
                         if check_pos <= MAX_BIN_CHESS and check_pos & own_chess == 0 and check_pos & opo_chess == 0:
-                            move_list.append(self.bin_to_index(check_pos))
+                            bin_move_list.append(check_pos)
                     
                     #3 go left
                     if current_pos & LEFT_BOUND == 0:
@@ -96,8 +99,7 @@ class AI(object):
                             while check_pos > 0 and check_pos & LEFT_BOUND == 0 and check_pos & opo_chess > 0:
                                 check_pos >>= bin_direct["left"]
                             if check_pos > 0 and check_pos & own_chess == 0 and check_pos & opo_chess == 0:
-                                move_list.append(self.bin_to_index(check_pos))
-                                print("go left", self.bin_to_index(check_pos))
+                                bin_move_list.append(check_pos)
                         
                         #4 go up-left
                         check_pos = current_pos >> bin_direct["up-left"]
@@ -105,7 +107,7 @@ class AI(object):
                             while check_pos > 0 and check_pos & LEFT_BOUND == 0 and check_pos & opo_chess > 0:
                                 check_pos >>= bin_direct["up-left"]
                             if check_pos > 0 and check_pos & own_chess == 0 and check_pos & opo_chess == 0:
-                                move_list.append(self.bin_to_index(check_pos))
+                                bin_move_list.append(check_pos)
                         
                         #5 go down-left
                         check_pos = current_pos << bin_direct["down-left"]
@@ -113,7 +115,7 @@ class AI(object):
                             while check_pos <= MAX_BIN_CHESS and check_pos & LEFT_BOUND == 0 and check_pos & opo_chess > 0:
                                 check_pos <<= bin_direct["down-left"]
                             if check_pos <= MAX_BIN_CHESS and check_pos & own_chess == 0 and check_pos & opo_chess == 0:
-                                move_list.append(self.bin_to_index(check_pos))
+                                bin_move_list.append(check_pos)
                     
                     #6 go right
                     if current_pos & RIGHT_BOUND == 0:
@@ -122,7 +124,7 @@ class AI(object):
                             while check_pos <= MAX_BIN_CHESS and check_pos & RIGHT_BOUND == 0 and check_pos & opo_chess > 0:
                                 check_pos <<= bin_direct["right"]
                             if check_pos <= MAX_BIN_CHESS and check_pos & own_chess == 0 and check_pos & opo_chess == 0:
-                                move_list.append(self.bin_to_index(check_pos))
+                                bin_move_list.append(check_pos)
                         
                         #7 go up-right
                         check_pos = current_pos >> bin_direct["up-right"]
@@ -130,7 +132,7 @@ class AI(object):
                             while check_pos > 0 and check_pos & RIGHT_BOUND == 0 and check_pos & opo_chess > 0:
                                 check_pos >>= bin_direct["up-right"]
                             if check_pos > 0 and check_pos & own_chess == 0 and check_pos & opo_chess == 0:
-                                move_list.append(self.bin_to_index(check_pos))
+                                bin_move_list.append(check_pos)
                         
                         #8 go down-right
                         check_pos = current_pos << bin_direct["down-right"]
@@ -138,9 +140,9 @@ class AI(object):
                             while check_pos <= MAX_BIN_CHESS and check_pos & RIGHT_BOUND == 0 and check_pos & opo_chess > 0:
                                 check_pos <<= bin_direct["down-right"]
                             if check_pos <= MAX_BIN_CHESS and check_pos & own_chess == 0 and check_pos & opo_chess == 0:
-                                move_list.append(self.bin_to_index(check_pos))
+                                bin_move_list.append(check_pos)
                 current_pos <<= 1
-            return move_list
+            return bin_move_list
         
         def count_bin_ones(self, num):
             count = 0
@@ -151,14 +153,53 @@ class AI(object):
         
         def evaluation(self, own_chess):
             result = 0
-            for i in range(11):
+            for i in range(10):
                 result += self.count_bin_ones(pos_values[i] & own_chess) * values[i]
             return result
+
+        def max_value(self, own_chess, opo_chess, alpha, beta, depth):
+            if depth == SEARCH_DEPTH or self.time_out - time.process_time() + self.start_time < 0.005:
+                return self.evaluation(own_chess), None
+            movables = self.bin_available_moves(own_chess, opo_chess)
+            if len(movables) == 0:
+                return self.min_value(own_chess, opo_chess, alpha, beta, depth+1), None
+            
+            step_value, step_move = -inf, None
+            for move in movables:
+                next_value = self.min_value(own_chess|move, opo_chess, alpha, beta, depth+1)
+                if beta <= next_value:
+                    return next_value, move
+                if step_value < next_value:
+                    step_value = next_value
+                    step_move = move
+                if alpha < next_value:
+                    alpha = next_value
+            return step_value, step_move
+        
+        def min_value(self, own_chess, opo_chess, alpha, beta, depth):
+            if depth == SEARCH_DEPTH or self.time_out - time.process_time() + self.start_time < 0.005:
+                return self.evaluation(own_chess)
+            movables = self.bin_available_moves(opo_chess, own_chess)
+            if len(movables) == 0:
+                step_value, step_move = self.max_value(own_chess, opo_chess, alpha, beta, depth+1)
+                return step_value
+            
+            step_value = inf
+            for move in movables:
+                next_value, _ = self.max_value(own_chess, opo_chess|move, alpha, beta, depth+1)
+                if alpha >= next_value:
+                    return next_value
+                if step_value > next_value:
+                    step_value = next_value
+                if beta > next_value:
+                    beta = next_value
+            return step_value
 
         # @jit()
         def go(self, chessboard):
             
             # init
+            self.start_time = time.process_time()
             self.candidate_list.clear()
             self.candidate_set.clear()
             self.max_weight = -inf
@@ -168,5 +209,12 @@ class AI(object):
                 own_chess, opo_chess = self.board_to_bin(chessboard)
             else:
                 opo_chess, own_chess = self.board_to_bin(chessboard)
-            self.candidate_list = self.bin_available_moves(own_chess, opo_chess)
-            self.candidate_set = self.candidate_list.copy()
+            self.candidate_set = self.bin_available_moves(own_chess, opo_chess)
+            for move in self.candidate_set:
+                self.candidate_list.append(self.bin_to_index(move))
+            
+            value, move = self.max_value(own_chess, opo_chess, -inf, inf, 0)
+            if move != None:
+                self.candidate_list.append(self.bin_to_index(move))
+            
+            print(time.process_time() - self.start_time)
