@@ -54,6 +54,7 @@ class AI(object):
             self.time_out = time_out
             self.candidate_list = []
             self.candidate_set = []
+            self.movable_dict = {}
             self.max_weight = -inf
             self.at_state = 0
             self.start_time = 0.0
@@ -76,6 +77,8 @@ class AI(object):
             return black_chess, white_chess
         
         def bin_available_moves(self, own_chess, opo_chess):
+            if (own_chess, opo_chess) in self.movable_dict:
+                return self.movable_dict[(own_chess, opo_chess)]
             bin_move_list = []
             current_pos = 1
             check_pos = 0
@@ -147,6 +150,7 @@ class AI(object):
                             if check_pos <= MAX_BIN_CHESS and check_pos & own_chess == 0 and check_pos & opo_chess == 0:
                                 bin_move_list.append(check_pos)
                 current_pos <<= 1
+            self.movable_dict[(own_chess, opo_chess)] = bin_move_list
             return bin_move_list
         
         def count_bin_ones(self, num):
