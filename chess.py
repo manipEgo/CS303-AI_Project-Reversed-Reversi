@@ -159,15 +159,16 @@ class AI(object):
                 num &= num - 1
             return count
         
-        def evaluation(self, own_chess):
-            result = 0
+        def evaluation(self, own_chess, opo_chess):
+            weight_sum = 0
             for i in range(10):
-                result += self.count_bin_ones(POS_VALUES[i] & own_chess) * values[i]
-            return result
+                weight_sum += self.count_bin_ones(POS_VALUES[i] & own_chess) * values[i]
+            move_sum = len(self.bin_available_moves(opo_chess, own_chess)) - len(self.bin_available_moves(own_chess, opo_chess))
+            return weight_sum + move_sum
 
         def max_value(self, own_chess, opo_chess, alpha, beta, depth):
             if depth == self.current_search_depth or self.time_out - time.process_time() + self.start_time < 0.005:
-                return self.evaluation(own_chess), None
+                return self.evaluation(own_chess, opo_chess), None
             movables = self.bin_available_moves(own_chess, opo_chess)
             if len(movables) == 0:
                 return self.min_value(own_chess, opo_chess, alpha, beta, depth+1), None
@@ -186,7 +187,7 @@ class AI(object):
         
         def min_value(self, own_chess, opo_chess, alpha, beta, depth):
             if depth == self.current_search_depth or self.time_out - time.process_time() + self.start_time < 0.005:
-                return self.evaluation(own_chess)
+                return self.evaluation(own_chess, opo_chess)
             movables = self.bin_available_moves(opo_chess, own_chess)
             if len(movables) == 0:
                 step_value, step_move = self.max_value(own_chess, opo_chess, alpha, beta, depth+1)
@@ -238,3 +239,4 @@ class AI(object):
                 self.candidate_list.append(self.bin_to_index(move))
             
             print(time.process_time() - self.start_time)
+            print(value)
