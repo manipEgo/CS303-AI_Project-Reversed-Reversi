@@ -34,14 +34,11 @@ BIN2INDEX = {1: (0, 0), 2: (0, 1), 4: (0, 2), 8: (0, 3), 16: (0, 4), 32: (0, 5),
              72057594037927936: (7, 0), 144115188075855872: (7, 1), 288230376151711744: (7, 2), 576460752303423488: (7, 3), 1152921504606846976: (7, 4), 2305843009213693952: (7, 5), 4611686018427387904: (7, 6), 9223372036854775808: (7, 7)}
 
 # SUPER PARAMETERS
-OPENIN_DEPTH = 10
-MIDWAY_DEPTH = 8
-MSMALL_DEPTH = 4
-ENDING_DEPTH = 14
-
-OPENIN_COUNT = 10
-MIDWAY_COUNT = 45
-ENDING_COUNT = 50
+STATE_NUM = 4
+COUNT_LIST = [10, 45, 50]
+DEPTH_LIST = [10, 8, 4, 14]
+BOARD_WEIGHT_LIST = [1, 1, 1, 1]
+MOVE_WEIGHT_LIST = [10, 30, 40, 5]
 
 values = np.array([-500, 25, -10, -5,
                         45, -1, -1,
@@ -58,7 +55,7 @@ class AI(object):
             self.candidate_list = []
             self.candidate_set = []
             self.max_weight = -inf
-            self.current_search_depth = OPENIN_DEPTH
+            self.at_state = 0
             self.start_time = 0.0
         
         def bin_to_index(self, bin_pos):
@@ -160,14 +157,15 @@ class AI(object):
             return count
         
         def evaluation(self, own_chess, opo_chess):
-            weight_sum = 0
+            board_sum = 0
             for i in range(10):
-                weight_sum += self.count_bin_ones(POS_VALUES[i] & own_chess) * values[i]
-            move_sum = len(self.bin_available_moves(opo_chess, own_chess)) - len(self.bin_available_moves(own_chess, opo_chess))
-            return weight_sum + move_sum
+                board_sum += self.count_bin_ones(POS_VALUES[i] & own_chess) * values[i]
+            #move_sum = len(self.bin_available_moves(opo_chess, own_chess)) - len(self.bin_available_moves(own_chess, opo_chess))
+            move_sum = 0
+            return BOARD_WEIGHT_LIST[self.at_state] * board_sum + MOVE_WEIGHT_LIST[self.at_state] * move_sum
 
         def max_value(self, own_chess, opo_chess, alpha, beta, depth):
-            if depth == self.current_search_depth or self.time_out - time.process_time() + self.start_time < 0.005:
+            if depth == DEPTH_LIST[self.at_state] or self.time_out - time.process_time() + self.start_time < 0.005:
                 return self.evaluation(own_chess, opo_chess), None
             movables = self.bin_available_moves(own_chess, opo_chess)
             if len(movables) == 0:
@@ -186,7 +184,7 @@ class AI(object):
             return step_value, step_move
         
         def min_value(self, own_chess, opo_chess, alpha, beta, depth):
-            if depth == self.current_search_depth or self.time_out - time.process_time() + self.start_time < 0.005:
+            if depth == DEPTH_LIST[self.at_state] or self.time_out - time.process_time() + self.start_time < 0.005:
                 return self.evaluation(own_chess, opo_chess)
             movables = self.bin_available_moves(opo_chess, own_chess)
             if len(movables) == 0:
@@ -224,14 +222,8 @@ class AI(object):
             
             # decide depth
             chess_count = self.count_bin_ones(own_chess) + self.count_bin_ones(opo_chess)
-            if chess_count < OPENIN_COUNT and POS_VALUES[0] & own_chess == 0 and POS_VALUES[0] & opo_chess == 0:
-                self.current_search_depth = OPENIN_DEPTH
-            elif chess_count > ENDING_COUNT:
-                self.current_search_depth = ENDING_DEPTH
-            elif chess_count > MIDWAY_COUNT:
-                self.current_search_depth = MSMALL_DEPTH
-            else:
-                self.current_search_depth = MIDWAY_DEPTH
+            if self.at_state < STATE_NUM and chess_count > COUNT_LIST[self.at_state]:
+                self.at_state += 1
             
             # search
             value, move = self.max_value(own_chess, opo_chess, -inf, inf, 0)
