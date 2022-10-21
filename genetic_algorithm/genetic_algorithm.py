@@ -1,9 +1,10 @@
+from multiprocessing import Queue, Value
 from random import Random
 from time import time_ns
 import time
 import numpy as np
 from statistics import mean
-from play import Play
+from play import Play, Game_Parameters
 
 # initial parameters
 STATE_NUM = 4
@@ -17,9 +18,9 @@ VALUES = [-500, 25, -10, -5,
                         -1]
 
 # GA parameters
-GENETIC_SIZE = 3
-GENETIC_DEPTH = 2
-GENETIC_REMAIN = 1
+GENETIC_SIZE = 16
+GENETIC_DEPTH = 5
+GENETIC_REMAIN = 4
 
 COUNT_DRIFT = 0
 DEPTH_DRIFT = 0.5
@@ -29,7 +30,7 @@ VALUE_DRIFT = 0
 random = Random(time_ns)
 
 # threading parameters
-THREAD_NUM = 5
+THREAD_NUM = 8
 
 # ======================================= #
 state_nums = []
@@ -44,31 +45,12 @@ next_board_lists = []
 next_mobil_lists = []
 next_value_lists = []
 adaptabilities = []
-prepare_params = []
+prepare_params = Queue()
+play_results = Queue()
 games = []
+games_black = []
+games_white = []
 start_time = 0
-finished_num = 0
-
-class Game_Parameters(object):
-    def __init__(self):
-        self.state_list = []
-        self.count_list = []
-        self.depth_list = []
-        self.board_list = []
-        self.mobil_list = []
-        self.value_list = []
-        self.black_list = []
-        self.white_list = []
-    
-    def append(self, state, count, depth, board, mobil, value, black, white):
-        self.state_list.append(state)
-        self.count_list.append(count)
-        self.depth_list.append(depth)
-        self.board_list.append(board)
-        self.mobil_list.append(mobil)
-        self.value_list.append(value)
-        self.black_list.append(black)
-        self.white_list.append(white)
 
 # random drift generator
 def generator(baseline, percentage, is_int, non_neg):
@@ -86,25 +68,25 @@ def generator(baseline, percentage, is_int, non_neg):
     return result
 
 def display_game(k, depth, black, white):
-    print("\033[2J\033[1;1H")
+    #print("\033[2J\033[1;1H")
     print("Timing:", str(time.perf_counter() - start_time) + "s")
     print("Processing:",
-          str((GENETIC_SIZE*GENETIC_SIZE - GENETIC_SIZE) * depth + finished_num) +
+          str(depth * (GENETIC_SIZE*GENETIC_SIZE - GENETIC_SIZE) + play_results.qsize()) +
           "/" + str((GENETIC_SIZE*GENETIC_SIZE - GENETIC_SIZE) * GENETIC_DEPTH))
-    print("Displaying: thread", k)
-    print("=============================================")
-    print("black:")
-    print("counts:", count_lists[black])
-    print("depths:", depth_lists[black])
-    print("boards:", board_lists[black])
-    print("mobils:", mobil_lists[black])
-    print("values:", value_lists[black])
-    print("white:")
-    print("counts:", count_lists[white])
-    print("depths:", depth_lists[white])
-    print("boards:", board_lists[white])
-    print("mobils:", mobil_lists[white])
-    print("values:", value_lists[white])
+    #print("Displaying: thread", k)
+    #print("=============================================")
+    #print("black:")
+    #print("counts:", count_lists[black])
+    #print("depths:", depth_lists[black])
+    #print("boards:", board_lists[black])
+    #print("mobils:", mobil_lists[black])
+    #print("values:", value_lists[black])
+    #print("white:")
+    #print("counts:", count_lists[white])
+    #print("depths:", depth_lists[white])
+    #print("boards:", board_lists[white])
+    #print("mobils:", mobil_lists[white])
+    #print("values:", value_lists[white])
     print("=============================================")
     #display_board(games[k].chessboard, False)
 
@@ -140,7 +122,6 @@ if __name__=="__main__":
 
     # steps
     start_time = time.perf_counter()
-    play_count = 0
     for depth in range(GENETIC_DEPTH):
         # step init
         games.clear()
@@ -150,9 +131,6 @@ if __name__=="__main__":
         mobil_lists.clear()
         value_lists.clear()
         adaptabilities.clear()
-        prepare_params.clear()
-        for item in range(THREAD_NUM):
-            prepare_params.append(Game_Parameters())
         for item in range(GENETIC_SIZE):
             adaptabilities.append(0)
         
@@ -181,59 +159,45 @@ if __name__=="__main__":
             value_lists.append(generator(VALUES, VALUE_DRIFT, False, False))
         
         # push parameters
-        k = 0
         for item in range(GENETIC_SIZE):
             for jack in range(GENETIC_SIZE):
                 if item == jack:
                     continue
-                prepare_params[k].append(
+                prepare_params.put(Game_Parameters(
                     (state_nums[item], state_nums[jack]),
                     (count_lists[item], count_lists[jack]),
                     (depth_lists[item], depth_lists[jack]),
                     (board_lists[item], board_lists[jack]),
                     (mobil_lists[item], mobil_lists[jack]),
                     (value_lists[item], value_lists[jack]),
-                    item,
-                    jack
+                    (item, jack))
                 )
-                k = (k + 1) % THREAD_NUM
         
-        # push games
+        # init games
         for item in range(THREAD_NUM):
-            games.append(Play(
-                item,
-                prepare_params[item].state_list,
-                prepare_params[item].count_list,
-                prepare_params[item].depth_list,
-                prepare_params[item].board_list,
-                prepare_params[item].mobil_list,
-                prepare_params[item].value_list,
-                prepare_params[item].black_list,
-                prepare_params[item].white_list
-            ))
+            black = Value('i', 0)
+            white = Value('i', 0)
+            games_black.append(black)
+            games_white.append(white)
+            games.append(Play(item, prepare_params, play_results, black, white))
             games[item].start()
         
         # wait
-        all_finished = False
         k = 0
-        while not all_finished:
-            all_finished = True
-            finished_num = 0
-            for game in games:
-                finished_num += game.finished
-                if game.finished < game.task_num:
-                    all_finished = False
+        all_count = prepare_params.qsize()
+        while play_results.qsize() < all_count:
+            now_count = play_results.qsize()
             k = (k + 1) % THREAD_NUM
-            display_game(k, depth, games[k].black, games[k].white)
+            display_game(k, depth, games_black[k].value, games_white[k].value)
             start_wait = time.perf_counter()
             while(time.perf_counter() - start_wait < 10):
                 pass
         
         # get results
-        for game in games:
-            for result in game.game_results:
-                if result != -1:
-                    adaptabilities[result] += 1
+        while not play_results.empty():
+            new_result = play_results.get(True)
+            if new_result != -1:
+                adaptabilities[new_result] += 1
         
         # sorting
         indices = np.argsort(adaptabilities)

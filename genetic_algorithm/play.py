@@ -1,45 +1,46 @@
-from multiprocessing import  Process
+from multiprocessing import Process, Queue, Value
 import time
 from chess_genetic import AI
 import numpy as np
 
+class Game_Parameters(object):
+    def __init__(self, state, count, depth, board, mobil, value, color):
+        self.state_tuple = state
+        self.count_tuple = count
+        self.depth_tuple = depth
+        self.board_tuple = board
+        self.mobil_tuple = mobil
+        self.value_tuple = value
+        self.color_tuple = color
+
 class Play(Process):
-    def __init__(self, threadID, state_list, count_list, depth_list, board_list, mobil_list, value_list, black_list, white_list):
+    def __init__(self, processID, param_queue: Queue, result_queue: Queue, black: Value, white: Value):
         super(Play, self).__init__()
-        self.threadID = threadID
-        self.task_num = len(state_list)
-        self.state_list = state_list
-        self.count_list = count_list
-        self.depth_list = depth_list
-        self.board_list = board_list
-        self.mobil_list = mobil_list
-        self.value_list = value_list
-        self.black_list = black_list
-        self.white_list = white_list
+        self.processID = processID
+        self.param_queue = param_queue
+        self.result_queue = result_queue
         self.state = []
         self.count = []
         self.depth = []
         self.board = []
         self.mobil = []
         self.value = []
-        self.black = -1
-        self.white = -1
+        self.black = Value
+        self.white = Value
         self.chessboard = np.zeros((8, 8))
         self.start_time = 0
         self.turn_time = 0
-        self.finished = 0
-        self.game_results = []
     
     def set_parameters(self):
-        self.state = self.state_list[self.finished]
-        self.count = self.count_list[self.finished]
-        self.depth = self.depth_list[self.finished]
-        self.board = self.board_list[self.finished]
-        self.mobil = self.mobil_list[self.finished]
-        self.value = self.value_list[self.finished]
-        self.black = self.black_list[self.finished]
-        self.white = self.white_list[self.finished]
-        self.finished += 1
+        new_params = self.param_queue.get(True)
+        self.state = new_params.state_tuple
+        self.count = new_params.count_tuple
+        self.depth = new_params.depth_tuple
+        self.board = new_params.board_tuple
+        self.mobil = new_params.mobil_tuple
+        self.value = new_params.value_tuple
+        self.black = new_params.color_tuple[0]
+        self.white = new_params.color_tuple[1]
 
     def flip(self, move):
         directions = [(1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1)]
@@ -71,7 +72,7 @@ class Play(Process):
         #        "/" + str(time.perf_counter() - self.start_time) + "s")
 
     def run(self):
-        while self.finished < self.task_num:
+        while not self.param_queue.empty():
             self.set_parameters()
             ai_black = AI(8, -1, 5, self.state[0], self.count[0], self.depth[0], self.board[0], self.mobil[0], self.value[0])
             ai_white = AI(8, 1, 5, self.state[1], self.count[1], self.depth[1], self.board[1], self.mobil[1], self.value[1])
@@ -117,12 +118,14 @@ class Play(Process):
             black_count = np.count_nonzero(self.chessboard == -1)
             white_count = np.count_nonzero(self.chessboard == 1)
             
-            if black_count > white_count:
-                self.game_results.append(self.black)
-            elif white_count > black_count:
-                self.game_results.append(self.white)
-            else:
-                self.game_results.append(-1)
-            print("\033[2J\033[1;1H")
-            print("\033[K" + "Process " + str(self.threadID) + " finished " + str(self.finished) + "/" + str(self.task_num))
             self.display_board()
+            if black_count < white_count:
+                self.result_queue.put(self.black)
+                print("black wins")
+            elif white_count < black_count:
+                self.result_queue.put(self.white)
+                print("white wins")
+            else:
+                self.result_queue.put(-1)
+                print("draw")
+            print()
