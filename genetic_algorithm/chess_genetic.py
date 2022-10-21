@@ -33,22 +33,8 @@ BIN2INDEX = {1: (0, 0), 2: (0, 1), 4: (0, 2), 8: (0, 3), 16: (0, 4), 32: (0, 5),
              281474976710656: (6, 0), 562949953421312: (6, 1), 1125899906842624: (6, 2), 2251799813685248: (6, 3), 4503599627370496: (6, 4), 9007199254740992: (6, 5), 18014398509481984: (6, 6), 36028797018963968: (6, 7),
              72057594037927936: (7, 0), 144115188075855872: (7, 1), 288230376151711744: (7, 2), 576460752303423488: (7, 3), 1152921504606846976: (7, 4), 2305843009213693952: (7, 5), 4611686018427387904: (7, 6), 9223372036854775808: (7, 7)}
 
-# SUPER PARAMETERS
-STATE_NUM = 4
-COUNT_LIST = [10, 45, 50, 64]
-DEPTH_LIST = [9, 6, 7, 12]
-BOARD_WEIGHT_LIST = [1, 1, 1, 1]
-MOVE_WEIGHT_LIST = [0.1, 0.3, 0.4, 0.1]
-
-values = np.array([-500, 25, -10, -5,
-                        45, -1, -1,
-                            -3, -2,
-                                -1])
-
-random.seed(0)
-
 class AI(object):
-        def __init__(self, chessboard_size, color, time_out):
+        def __init__(self, chessboard_size, color, time_out, state_num, count_list, depth_list, board_list, move_list, value_list):
             self.chessboard_size = chessboard_size
             self.color = color
             self.time_out = time_out
@@ -58,6 +44,14 @@ class AI(object):
             self.max_weight = -inf
             self.at_state = 0
             self.start_time = 0.0
+            
+            # SUPER PARAMETERS
+            self.STATE_NUM = state_num
+            self.COUNT_LIST = count_list
+            self.DEPTH_LIST = depth_list
+            self.BOARD_WEIGHT_LIST = board_list
+            self.MOVE_WEIGHT_LIST = move_list
+            self.values = value_list
         
         def bin_to_index(self, bin_pos):
             return BIN2INDEX[bin_pos]
@@ -163,14 +157,14 @@ class AI(object):
         def evaluation(self, own_chess, opo_chess):
             board_sum = 0
             for i in range(10):
-                board_sum += self.count_bin_ones(POS_VALUES[i] & own_chess) * values[i]
+                board_sum += self.count_bin_ones(POS_VALUES[i] & own_chess) * self.values[i]
             move_sum = len(self.bin_available_moves(opo_chess, own_chess)) - len(self.bin_available_moves(own_chess, opo_chess))
             #move_sum = 0
-            return BOARD_WEIGHT_LIST[self.at_state] * board_sum + MOVE_WEIGHT_LIST[self.at_state] * move_sum
+            return self.BOARD_WEIGHT_LIST[self.at_state] * board_sum + self.MOVE_WEIGHT_LIST[self.at_state] * move_sum
 
         def max_value(self, own_chess, opo_chess, alpha, beta, depth):
             # TODO better time check position
-            if depth == DEPTH_LIST[self.at_state] or self.time_out - time.process_time() + self.start_time < 0.005:
+            if depth == self.DEPTH_LIST[self.at_state] or self.time_out - time.process_time() + self.start_time < 0.005:
                 return self.evaluation(own_chess, opo_chess), None
             movables = self.bin_available_moves(own_chess, opo_chess)
             if len(movables) == 0:
@@ -189,7 +183,7 @@ class AI(object):
             return step_value, step_move
         
         def min_value(self, own_chess, opo_chess, alpha, beta, depth):
-            if depth == DEPTH_LIST[self.at_state] or self.time_out - time.process_time() + self.start_time < 0.005:
+            if depth == self.DEPTH_LIST[self.at_state] or self.time_out - time.process_time() + self.start_time < 0.005:
                 return self.evaluation(own_chess, opo_chess)
             movables = self.bin_available_moves(opo_chess, own_chess)
             if len(movables) == 0:
@@ -227,13 +221,10 @@ class AI(object):
             
             # decide depth
             chess_count = self.count_bin_ones(own_chess) + self.count_bin_ones(opo_chess)
-            if self.at_state < STATE_NUM and chess_count > COUNT_LIST[self.at_state]:
+            if self.at_state < self.STATE_NUM and chess_count > self.COUNT_LIST[self.at_state]:
                 self.at_state += 1
             
             # search
             value, move = self.max_value(own_chess, opo_chess, -inf, inf, 0)
             if move != None:
                 self.candidate_list.append(self.bin_to_index(move))
-            
-            print(time.process_time() - self.start_time)
-            print(value)
