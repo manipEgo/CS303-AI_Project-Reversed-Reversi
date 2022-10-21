@@ -162,6 +162,108 @@ class AI(object):
             #move_sum = 0
             return self.BOARD_WEIGHT_LIST[self.at_state] * board_sum + self.MOVE_WEIGHT_LIST[self.at_state] * move_sum
 
+        def bin_flip(self, own_chess, opo_chess, move):
+            result_own = own_chess | move
+            result_opo = opo_chess
+            #1 go up
+            check_pos = move >> BIN_DIRECT["up"]
+            if check_pos & opo_chess > 0:
+                while check_pos > 0 and check_pos & opo_chess > 0:
+                    check_pos >>= BIN_DIRECT["up"]
+                if check_pos > 0 and check_pos & own_chess > 0:
+                    check_pos <<= BIN_DIRECT["down"]
+                    while check_pos != move:
+                        result_own |= check_pos
+                        result_opo ^= check_pos
+                        check_pos <<= BIN_DIRECT["down"]
+            
+            #2 go down
+            check_pos = move << BIN_DIRECT["down"]
+            if check_pos & opo_chess > 0:
+                while check_pos <= MAX_BIN_CHESS and check_pos & opo_chess > 0:
+                    check_pos <<= BIN_DIRECT["down"]
+                if check_pos <= MAX_BIN_CHESS and check_pos & own_chess > 0:
+                    check_pos >>= BIN_DIRECT["up"]
+                    while check_pos != move:
+                        result_own |= check_pos
+                        result_opo ^= check_pos
+                        check_pos >>= BIN_DIRECT["up"]
+            
+            #3 go left
+            if move & LEFT_BOUND == 0:
+                check_pos = move >> BIN_DIRECT["left"]
+                if check_pos & opo_chess > 0:
+                    while check_pos > 0 and check_pos & LEFT_BOUND == 0 and check_pos & opo_chess > 0:
+                        check_pos >>= BIN_DIRECT["left"]
+                    if check_pos > 0 and check_pos & own_chess > 0:
+                        check_pos <<= BIN_DIRECT["right"]
+                        while check_pos != move:
+                            result_own |= check_pos
+                            result_opo ^= check_pos
+                            check_pos <<= BIN_DIRECT["right"]
+                
+                #4 go up-left
+                check_pos = move >> BIN_DIRECT["up-left"]
+                if check_pos & opo_chess > 0:
+                    while check_pos > 0 and check_pos & LEFT_BOUND == 0 and check_pos & opo_chess > 0:
+                        check_pos >>= BIN_DIRECT["up-left"]
+                    if check_pos > 0 and check_pos & own_chess > 0:
+                        check_pos <<= BIN_DIRECT["down-right"]
+                        while check_pos != move:
+                            result_own |= check_pos
+                            result_opo ^= check_pos
+                            check_pos <<= BIN_DIRECT["down-right"]
+                
+                #5 go down-left
+                check_pos = move << BIN_DIRECT["down-left"]
+                if check_pos & opo_chess > 0:
+                    while check_pos <= MAX_BIN_CHESS and check_pos & LEFT_BOUND == 0 and check_pos & opo_chess > 0:
+                        check_pos <<= BIN_DIRECT["down-left"]
+                    if check_pos <= MAX_BIN_CHESS and check_pos & own_chess > 0:
+                        check_pos >>= BIN_DIRECT["up-right"]
+                        while check_pos != move:
+                            result_own |= check_pos
+                            result_opo ^= check_pos
+                            check_pos >>= BIN_DIRECT["up-right"]
+            
+            #6 go right
+            if move & RIGHT_BOUND == 0:
+                check_pos = move << BIN_DIRECT["right"]
+                if check_pos & opo_chess > 0:
+                    while check_pos <= MAX_BIN_CHESS and check_pos & RIGHT_BOUND == 0 and check_pos & opo_chess > 0:
+                        check_pos <<= BIN_DIRECT["right"]
+                    if check_pos <= MAX_BIN_CHESS and check_pos & own_chess > 0:
+                        check_pos >>= BIN_DIRECT["left"]
+                        while check_pos != move:
+                            result_own |= check_pos
+                            result_opo ^= check_pos
+                            check_pos >>= BIN_DIRECT["left"]
+                
+                #7 go up-right
+                check_pos = move >> BIN_DIRECT["up-right"]
+                if check_pos & opo_chess > 0:
+                    while check_pos > 0 and check_pos & RIGHT_BOUND == 0 and check_pos & opo_chess > 0:
+                        check_pos >>= BIN_DIRECT["up-right"]
+                    if check_pos > 0 and check_pos & own_chess > 0:
+                        check_pos <<= BIN_DIRECT["down-left"]
+                        while check_pos != move:
+                            result_own |= check_pos
+                            result_opo ^= check_pos
+                            check_pos <<= BIN_DIRECT["down-left"]
+                
+                #8 go down-right
+                check_pos = move << BIN_DIRECT["down-right"]
+                if check_pos & opo_chess > 0:
+                    while check_pos <= MAX_BIN_CHESS and check_pos & RIGHT_BOUND == 0 and check_pos & opo_chess > 0:
+                        check_pos <<= BIN_DIRECT["down-right"]
+                    if check_pos <= MAX_BIN_CHESS and check_pos & own_chess > 0:
+                        check_pos >>= BIN_DIRECT["up-left"]
+                        while check_pos != move:
+                            result_own |= check_pos
+                            result_opo ^= check_pos
+                            check_pos >>= BIN_DIRECT["up-left"]
+            return result_own, result_opo
+
         def max_value(self, own_chess, opo_chess, alpha, beta, depth):
             # TODO better time check position
             if depth == self.DEPTH_LIST[self.at_state] or self.time_out - time.process_time() + self.start_time < 0.005:
@@ -172,7 +274,8 @@ class AI(object):
             
             step_value, step_move = -inf, None
             for move in movables:
-                next_value = self.min_value(own_chess|move, opo_chess, alpha, beta, depth+1)
+                moved_own, moved_opo = self.bin_flip(own_chess, opo_chess, move)
+                next_value = self.min_value(moved_own, moved_opo, alpha, beta, depth+1)
                 if beta <= next_value:
                     return next_value, move
                 if step_value < next_value:
@@ -192,7 +295,8 @@ class AI(object):
             
             step_value = inf
             for move in movables:
-                next_value, _ = self.max_value(own_chess, opo_chess|move, alpha, beta, depth+1)
+                moved_opo, moved_own = self.bin_flip(opo_chess, own_chess, move)
+                next_value, _ = self.max_value(moved_own, moved_opo, alpha, beta, depth+1)
                 if alpha >= next_value:
                     return next_value
                 if step_value > next_value:

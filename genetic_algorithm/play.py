@@ -32,7 +32,6 @@ def play(state_num, count_list, depth_list, board_list, move_list, value_list):
     ai_black = AI(8, -1, 5, state_num[0], count_list[0], depth_list[0], board_list[0], move_list[0], value_list[0])
     ai_white = AI(8, 1, 5, state_num[1], count_list[1], depth_list[1], board_list[1], move_list[1], value_list[1])
     chessboard = np.zeros((8, 8), dtype=int)
-    chess_display = np.zeros((8, 8), dtype=str)
     turn = -1
     black_dead = False
     white_dead = False
