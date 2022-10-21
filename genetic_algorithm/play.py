@@ -1,3 +1,4 @@
+import time
 from chess_genetic import AI
 import numpy as np
 
@@ -37,6 +38,8 @@ def play(state_num, count_list, depth_list, board_list, move_list, value_list):
     white_dead = False
     step = []
 
+    start_time = time.process_time()
+
     indices = [(4, 3), (3, 4)]
     for index in indices:
         chessboard[index] = -1
@@ -45,8 +48,10 @@ def play(state_num, count_list, depth_list, board_list, move_list, value_list):
         chessboard[index] = 1
     step.append(chessboard.copy())
     display_board(chessboard)
+    print(start_time)
 
     while(not(black_dead and white_dead)):
+        turn_time = time.process_time()
         if turn == 1:
             ai_white.go(chessboard)
             if len(ai_white.candidate_list) > 0:
@@ -67,8 +72,10 @@ def play(state_num, count_list, depth_list, board_list, move_list, value_list):
                 black_dead = True
         step.append(chessboard.copy())
         
-        print("\033[1A\033[1A\033[1A\033[1A\033[1A\033[1A\033[1A\033[1A", end="")
+        print("\033[1A\033[1A\033[1A\033[1A\033[1A\033[1A\033[1A\033[1A\033[1A", end="")
         display_board(chessboard)
+        print("\033[K" + "game time:", str(time.process_time() - turn_time) +
+              "/" + str(time.process_time() - start_time) + "s")
         turn = -turn
     
     black_count = np.count_nonzero(chessboard == -1)

@@ -1,12 +1,13 @@
 from random import Random
 from time import time_ns
+import time
 import numpy as np
 from statistics import mean
 from play import play
 
 STATE_NUM = 4
-COUNT_LIST = [10, 45, 50, 64]
-DEPTH_LIST = [9, 6, 7, 12]
+COUNT_LIST = [8, 43, 55, 64]
+DEPTH_LIST = [7, 5, 4, 9]
 BOARD_WEIGHT_LIST = [1, 1, 1, 1]
 MOBIL_WEIGHT_LIST = [1, 3, 4, 1]
 VALUES = [-500, 25, -10, -5,
@@ -14,9 +15,9 @@ VALUES = [-500, 25, -10, -5,
                     -3, -2,
                         -1]
 
-GENETIC_SIZE = 64
-GENETIC_DEPTH = 3
-GENETIC_REMAIN = 10
+GENETIC_SIZE = 3
+GENETIC_DEPTH = 2
+GENETIC_REMAIN = 1
 
 COUNT_DRIFT = 0
 DEPTH_DRIFT = 0.5
@@ -48,9 +49,9 @@ def generator(baseline, percentage, is_int, non_neg):
         else:
             result[i] += random.random() * dist * 2.0 - dist
     if non_neg:
-        for item in result:
-            if item < 0:
-                item = 0
+        for i in range(len(result)):
+            if result[i] < 0:
+                result[i] = 0
     return result
 
 # initial
@@ -68,6 +69,8 @@ for i in range(GENETIC_REMAIN):
     next_value_lists.append(generator(VALUES, VALUE_DRIFT, False, False))
 
 # steps
+start_time = time.process_time()
+play_count = 0
 for depth in range(GENETIC_DEPTH):
     # step init
     count_lists.clear()
@@ -92,15 +95,15 @@ for depth in range(GENETIC_DEPTH):
         value_lists.append(next_value_lists[i])
     
     # new random parameters
-    for i in range(GENETIC_REMAIN + 1, GENETIC_SIZE):
+    for i in range(GENETIC_REMAIN, GENETIC_SIZE):
         count_lists.append(generator(COUNT_LIST, COUNT_DRIFT, True, True))
-    for i in range(GENETIC_REMAIN + 1, GENETIC_SIZE):
+    for i in range(GENETIC_REMAIN, GENETIC_SIZE):
         depth_lists.append(generator(DEPTH_LIST, DEPTH_DRIFT, True, True))
-    for i in range(GENETIC_REMAIN + 1, GENETIC_SIZE):
+    for i in range(GENETIC_REMAIN, GENETIC_SIZE):
         board_lists.append(generator(BOARD_WEIGHT_LIST, BOARD_DRIFT, False, False))
-    for i in range(GENETIC_REMAIN + 1, GENETIC_SIZE):
+    for i in range(GENETIC_REMAIN, GENETIC_SIZE):
         mobil_lists.append(generator(MOBIL_WEIGHT_LIST, MOBIL_DRIFT, False, True))
-    for i in range(GENETIC_REMAIN + 1, GENETIC_SIZE):
+    for i in range(GENETIC_REMAIN, GENETIC_SIZE):
         value_lists.append(generator(VALUES, VALUE_DRIFT, False, False))
     
     # evaluation
@@ -109,7 +112,9 @@ for depth in range(GENETIC_DEPTH):
             if i == j:
                 continue
             print("=============================================")
-            print("playing:", i*j + j, "/", GENETIC_SIZE*GENETIC_SIZE - GENETIC_SIZE, (i*j + j)/(GENETIC_SIZE*GENETIC_SIZE - GENETIC_SIZE)*100, "%")
+            play_count += 1
+            print("playing:", play_count, "/", (GENETIC_SIZE*GENETIC_SIZE - GENETIC_SIZE)*GENETIC_DEPTH, str(play_count/((GENETIC_SIZE*GENETIC_SIZE - GENETIC_SIZE)*GENETIC_DEPTH)*100) + "%")
+            print("timing:", str(time.process_time() - start_time) + "s")
             print("black:")
             print("counts:", count_lists[i])
             print("depths:", depth_lists[i])
@@ -142,15 +147,15 @@ for depth in range(GENETIC_DEPTH):
                 print("draw")
     
     # sorting
-    indices = np.argsort(-adaptabilities)
+    indices = np.argsort(adaptabilities)
     
     # remain the parameters
     for i in range(GENETIC_REMAIN):
-        next_count_lists[i] = count_lists[indices[i]]
-        next_depth_lists[i] = depth_lists[indices[i]]
-        next_board_lists[i] = board_lists[indices[i]]
-        next_mobil_lists[i] = mobil_lists[indices[i]]
-        next_value_lists[i] = value_lists[indices[i]]
+        next_count_lists[i] = count_lists[indices[GENETIC_REMAIN - i - 1]]
+        next_depth_lists[i] = depth_lists[indices[GENETIC_REMAIN - i - 1]]
+        next_board_lists[i] = board_lists[indices[GENETIC_REMAIN - i - 1]]
+        next_mobil_lists[i] = mobil_lists[indices[GENETIC_REMAIN - i - 1]]
+        next_value_lists[i] = value_lists[indices[GENETIC_REMAIN - i - 1]]
 
 print("counts:", count_lists)
 print("depths:", depth_lists)
