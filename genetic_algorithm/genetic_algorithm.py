@@ -3,8 +3,9 @@ from time import time_ns
 import time
 import numpy as np
 from statistics import mean
-from play import play
+from play import Play
 
+# initial parameters
 STATE_NUM = 4
 COUNT_LIST = [8, 43, 55, 64]
 DEPTH_LIST = [7, 5, 4, 9]
@@ -15,6 +16,7 @@ VALUES = [-500, 25, -10, -5,
                     -3, -2,
                         -1]
 
+# GA parameters
 GENETIC_SIZE = 3
 GENETIC_DEPTH = 2
 GENETIC_REMAIN = 1
@@ -26,6 +28,10 @@ MOBIL_DRIFT = 10.0
 VALUE_DRIFT = 0
 random = Random(time_ns)
 
+# threading parameters
+THREAD_NUM = 5
+
+# ======================================= #
 state_nums = []
 count_lists = []
 depth_lists = []
@@ -38,6 +44,31 @@ next_board_lists = []
 next_mobil_lists = []
 next_value_lists = []
 adaptabilities = []
+prepare_params = []
+games = []
+start_time = 0
+finished_num = 0
+
+class Game_Parameters(object):
+    def __init__(self):
+        self.state_list = []
+        self.count_list = []
+        self.depth_list = []
+        self.board_list = []
+        self.mobil_list = []
+        self.value_list = []
+        self.black_list = []
+        self.white_list = []
+    
+    def append(self, state, count, depth, board, mobil, value, black, white):
+        self.state_list.append(state)
+        self.count_list.append(count)
+        self.depth_list.append(depth)
+        self.board_list.append(board)
+        self.mobil_list.append(mobil)
+        self.value_list.append(value)
+        self.black_list.append(black)
+        self.white_list.append(white)
 
 # random drift generator
 def generator(baseline, percentage, is_int, non_neg):
@@ -54,112 +85,169 @@ def generator(baseline, percentage, is_int, non_neg):
                 result[i] = 0
     return result
 
-# initial
-for i in range(GENETIC_SIZE):
-    state_nums.append(STATE_NUM)
-for i in range(GENETIC_REMAIN):
-    next_count_lists.append(generator(COUNT_LIST, COUNT_DRIFT, True, True))
-for i in range(GENETIC_REMAIN):
-    next_depth_lists.append(generator(DEPTH_LIST, DEPTH_DRIFT, True, True))
-for i in range(GENETIC_REMAIN):
-    next_board_lists.append(generator(BOARD_WEIGHT_LIST, BOARD_DRIFT, False, False))
-for i in range(GENETIC_REMAIN):
-    next_mobil_lists.append(generator(MOBIL_WEIGHT_LIST, MOBIL_DRIFT, False, True))
-for i in range(GENETIC_REMAIN):
-    next_value_lists.append(generator(VALUES, VALUE_DRIFT, False, False))
+def display_game(k, depth, black, white):
+    print("\033[2J\033[1;1H")
+    print("Timing:", str(time.perf_counter() - start_time) + "s")
+    print("Processing:",
+          str((GENETIC_SIZE*GENETIC_SIZE - GENETIC_SIZE) * depth + finished_num) +
+          "/" + str((GENETIC_SIZE*GENETIC_SIZE - GENETIC_SIZE) * GENETIC_DEPTH))
+    print("Displaying: thread", k)
+    print("=============================================")
+    print("black:")
+    print("counts:", count_lists[black])
+    print("depths:", depth_lists[black])
+    print("boards:", board_lists[black])
+    print("mobils:", mobil_lists[black])
+    print("values:", value_lists[black])
+    print("white:")
+    print("counts:", count_lists[white])
+    print("depths:", depth_lists[white])
+    print("boards:", board_lists[white])
+    print("mobils:", mobil_lists[white])
+    print("values:", value_lists[white])
+    print("=============================================")
+    #display_board(games[k].chessboard, False)
 
-# steps
-start_time = time.process_time()
-play_count = 0
-for depth in range(GENETIC_DEPTH):
-    # step init
-    count_lists.clear()
-    depth_lists.clear()
-    board_lists.clear()
-    mobil_lists.clear()
-    value_lists.clear()
-    adaptabilities.clear()
-    for i in range(GENETIC_SIZE):
-        adaptabilities.append(0)
-    
-    # remained parameters
-    for i in range(GENETIC_REMAIN):
-        count_lists.append(next_count_lists[i])
-    for i in range(GENETIC_REMAIN):
-        depth_lists.append(next_depth_lists[i])
-    for i in range(GENETIC_REMAIN):
-        board_lists.append(next_board_lists[i])
-    for i in range(GENETIC_REMAIN):
-        mobil_lists.append(next_mobil_lists[i])
-    for i in range(GENETIC_REMAIN):
-        value_lists.append(next_value_lists[i])
-    
-    # new random parameters
-    for i in range(GENETIC_REMAIN, GENETIC_SIZE):
-        count_lists.append(generator(COUNT_LIST, COUNT_DRIFT, True, True))
-    for i in range(GENETIC_REMAIN, GENETIC_SIZE):
-        depth_lists.append(generator(DEPTH_LIST, DEPTH_DRIFT, True, True))
-    for i in range(GENETIC_REMAIN, GENETIC_SIZE):
-        board_lists.append(generator(BOARD_WEIGHT_LIST, BOARD_DRIFT, False, False))
-    for i in range(GENETIC_REMAIN, GENETIC_SIZE):
-        mobil_lists.append(generator(MOBIL_WEIGHT_LIST, MOBIL_DRIFT, False, True))
-    for i in range(GENETIC_REMAIN, GENETIC_SIZE):
-        value_lists.append(generator(VALUES, VALUE_DRIFT, False, False))
-    
-    # evaluation
-    for i in range(GENETIC_SIZE):
-        for j in range(GENETIC_SIZE):
-            if i == j:
-                continue
-            print("=============================================")
-            play_count += 1
-            print("playing:", play_count, "/", (GENETIC_SIZE*GENETIC_SIZE - GENETIC_SIZE)*GENETIC_DEPTH, str(play_count/((GENETIC_SIZE*GENETIC_SIZE - GENETIC_SIZE)*GENETIC_DEPTH)*100) + "%")
-            print("timing:", str(time.process_time() - start_time) + "s")
-            print("black:")
-            print("counts:", count_lists[i])
-            print("depths:", depth_lists[i])
-            print("boards:", board_lists[i])
-            print("mobils:", mobil_lists[i])
-            print("values:", value_lists[i])
-            print("white:")
-            print("counts:", count_lists[j])
-            print("depths:", depth_lists[j])
-            print("boards:", board_lists[j])
-            print("mobils:", mobil_lists[j])
-            print("values:", value_lists[j])
-            print("=============================================")
-            game_result = play(
-                (state_nums[i], state_nums[j]),
-                (count_lists[i], count_lists[j]),
-                (depth_lists[i], depth_lists[j]),
-                (board_lists[i], board_lists[j]),
-                (mobil_lists[i], mobil_lists[j]),
-                (value_lists[i], value_lists[j])
-            )
-            print("=============================================")
-            if game_result == -1:
-                adaptabilities[i] += 1
-                print("black wins")
-            elif game_result == 1:
-                adaptabilities[j] += 1
-                print("white wins")
-            else:
-                print("draw")
-    
-    # sorting
-    indices = np.argsort(adaptabilities)
-    
-    # remain the parameters
-    for i in range(GENETIC_REMAIN):
-        next_count_lists[i] = count_lists[indices[GENETIC_REMAIN - i - 1]]
-        next_depth_lists[i] = depth_lists[indices[GENETIC_REMAIN - i - 1]]
-        next_board_lists[i] = board_lists[indices[GENETIC_REMAIN - i - 1]]
-        next_mobil_lists[i] = mobil_lists[indices[GENETIC_REMAIN - i - 1]]
-        next_value_lists[i] = value_lists[indices[GENETIC_REMAIN - i - 1]]
+def display_board(chessboard, clear_board):
+        if clear_board:
+            print("\033[1A\033[1A\033[1A\033[1A\033[1A\033[1A\033[1A\033[1A\033[1A", end="")
+        for row in chessboard:
+            for item in row:
+                if item == -1:
+                    print('●', end=" ")
+                elif item == 1:
+                    print('○', end=" ")
+                else:
+                    print('┼', end=" ")
+            print()
+        #print("\033[K" + "game time:", str(time.perf_counter() - turn_time) +
+        #        "/" + str(time.perf_counter() - start_time) + "s")
 
-print("counts:", count_lists)
-print("depths:", depth_lists)
-print("boards:", board_lists)
-print("mobils:", mobil_lists)
-print("values:", value_lists)
-    
+if __name__=="__main__":
+    # initial
+    for item in range(GENETIC_SIZE):
+        state_nums.append(STATE_NUM)
+    for item in range(GENETIC_REMAIN):
+        next_count_lists.append(generator(COUNT_LIST, COUNT_DRIFT, True, True))
+    for item in range(GENETIC_REMAIN):
+        next_depth_lists.append(generator(DEPTH_LIST, DEPTH_DRIFT, True, True))
+    for item in range(GENETIC_REMAIN):
+        next_board_lists.append(generator(BOARD_WEIGHT_LIST, BOARD_DRIFT, False, False))
+    for item in range(GENETIC_REMAIN):
+        next_mobil_lists.append(generator(MOBIL_WEIGHT_LIST, MOBIL_DRIFT, False, True))
+    for item in range(GENETIC_REMAIN):
+        next_value_lists.append(generator(VALUES, VALUE_DRIFT, False, False))
+
+    # steps
+    start_time = time.perf_counter()
+    play_count = 0
+    for depth in range(GENETIC_DEPTH):
+        # step init
+        games.clear()
+        count_lists.clear()
+        depth_lists.clear()
+        board_lists.clear()
+        mobil_lists.clear()
+        value_lists.clear()
+        adaptabilities.clear()
+        prepare_params.clear()
+        for item in range(THREAD_NUM):
+            prepare_params.append(Game_Parameters())
+        for item in range(GENETIC_SIZE):
+            adaptabilities.append(0)
+        
+        # remained parameters
+        for item in range(GENETIC_REMAIN):
+            count_lists.append(next_count_lists[item])
+        for item in range(GENETIC_REMAIN):
+            depth_lists.append(next_depth_lists[item])
+        for item in range(GENETIC_REMAIN):
+            board_lists.append(next_board_lists[item])
+        for item in range(GENETIC_REMAIN):
+            mobil_lists.append(next_mobil_lists[item])
+        for item in range(GENETIC_REMAIN):
+            value_lists.append(next_value_lists[item])
+        
+        # new random parameters
+        for item in range(GENETIC_REMAIN, GENETIC_SIZE):
+            count_lists.append(generator(COUNT_LIST, COUNT_DRIFT, True, True))
+        for item in range(GENETIC_REMAIN, GENETIC_SIZE):
+            depth_lists.append(generator(DEPTH_LIST, DEPTH_DRIFT, True, True))
+        for item in range(GENETIC_REMAIN, GENETIC_SIZE):
+            board_lists.append(generator(BOARD_WEIGHT_LIST, BOARD_DRIFT, False, False))
+        for item in range(GENETIC_REMAIN, GENETIC_SIZE):
+            mobil_lists.append(generator(MOBIL_WEIGHT_LIST, MOBIL_DRIFT, False, True))
+        for item in range(GENETIC_REMAIN, GENETIC_SIZE):
+            value_lists.append(generator(VALUES, VALUE_DRIFT, False, False))
+        
+        # push parameters
+        k = 0
+        for item in range(GENETIC_SIZE):
+            for jack in range(GENETIC_SIZE):
+                if item == jack:
+                    continue
+                prepare_params[k].append(
+                    (state_nums[item], state_nums[jack]),
+                    (count_lists[item], count_lists[jack]),
+                    (depth_lists[item], depth_lists[jack]),
+                    (board_lists[item], board_lists[jack]),
+                    (mobil_lists[item], mobil_lists[jack]),
+                    (value_lists[item], value_lists[jack]),
+                    item,
+                    jack
+                )
+                k = (k + 1) % THREAD_NUM
+        
+        # push games
+        for item in range(THREAD_NUM):
+            games.append(Play(
+                item,
+                prepare_params[item].state_list,
+                prepare_params[item].count_list,
+                prepare_params[item].depth_list,
+                prepare_params[item].board_list,
+                prepare_params[item].mobil_list,
+                prepare_params[item].value_list,
+                prepare_params[item].black_list,
+                prepare_params[item].white_list
+            ))
+            games[item].start()
+        
+        # wait
+        all_finished = False
+        k = 0
+        while not all_finished:
+            all_finished = True
+            finished_num = 0
+            for game in games:
+                finished_num += game.finished
+                if game.finished < game.task_num:
+                    all_finished = False
+            k = (k + 1) % THREAD_NUM
+            display_game(k, depth, games[k].black, games[k].white)
+            start_wait = time.perf_counter()
+            while(time.perf_counter() - start_wait < 10):
+                pass
+        
+        # get results
+        for game in games:
+            for result in game.game_results:
+                if result != -1:
+                    adaptabilities[result] += 1
+        
+        # sorting
+        indices = np.argsort(adaptabilities)
+        
+        # remain the parameters
+        for item in range(GENETIC_REMAIN):
+            next_count_lists[item] = count_lists[indices[GENETIC_REMAIN - item - 1]]
+            next_depth_lists[item] = depth_lists[indices[GENETIC_REMAIN - item - 1]]
+            next_board_lists[item] = board_lists[indices[GENETIC_REMAIN - item - 1]]
+            next_mobil_lists[item] = mobil_lists[indices[GENETIC_REMAIN - item - 1]]
+            next_value_lists[item] = value_lists[indices[GENETIC_REMAIN - item - 1]]
+
+    print("counts:", count_lists)
+    print("depths:", depth_lists)
+    print("boards:", board_lists)
+    print("mobils:", mobil_lists)
+    print("values:", value_lists)
