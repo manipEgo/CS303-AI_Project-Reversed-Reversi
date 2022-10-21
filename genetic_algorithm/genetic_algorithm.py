@@ -1,4 +1,5 @@
 from random import Random
+from time import time_ns
 import numpy as np
 from statistics import mean
 from play import play
@@ -22,7 +23,7 @@ DEPTH_DRIFT = 0.5
 BOARD_DRIFT = 0
 MOBIL_DRIFT = 10.0
 VALUE_DRIFT = 0
-random = Random(114)
+random = Random(time_ns)
 
 state_nums = []
 count_lists = []
