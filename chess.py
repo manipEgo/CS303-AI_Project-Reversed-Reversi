@@ -35,8 +35,8 @@ BIN2INDEX = {1: (0, 0), 2: (0, 1), 4: (0, 2), 8: (0, 3), 16: (0, 4), 32: (0, 5),
 
 # SUPER PARAMETERS
 STATE_NUM = 4
-COUNT_LIST = [10, 45, 50, 64]
-DEPTH_LIST = [9, 6, 7, 12]
+COUNT_LIST = [8, 43, 55, 64]
+DEPTH_LIST = [7, 5, 4, 9]
 BOARD_WEIGHT_LIST = [1, 1, 1, 1]
 MOVE_WEIGHT_LIST = [0.1, 0.3, 0.4, 0.1]
 
@@ -64,6 +64,18 @@ class AI(object):
         
         def index_to_bin(self, row, col):
             return (int)(INDEX2BIN[row][col])
+        
+        def bin_to_board(self, own_chess, opo_chess):
+            result_board = np.zeros((self.chessboard_size, self.chessboard_size))
+            pointer = 1
+            for row in range(self.chessboard_size):
+                for col in range(self.chessboard_size):
+                    if pointer & own_chess > 0:
+                        result_board[row][col] = self.color
+                    elif pointer & opo_chess > 0:
+                        result_board[row][col] = -self.color
+                    pointer <<= 1
+            return result_board
         
         def board_to_bin(self, chessboard):
             black_chess = 0
