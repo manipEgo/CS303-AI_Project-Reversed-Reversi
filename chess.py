@@ -36,7 +36,7 @@ BIN2INDEX = {1: (0, 0), 2: (0, 1), 4: (0, 2), 8: (0, 3), 16: (0, 4), 32: (0, 5),
 # SUPER PARAMETERS
 STATE_NUM = 4
 COUNT_LIST = [10, 45, 50, 64]
-DEPTH_LIST = [11, 9, 8, 14]
+DEPTH_LIST = [11, 7, 8, 14]
 BOARD_WEIGHT_LIST = [1, 1, 1, 1]
 MOVE_WEIGHT_LIST = [10, 30, 40, 5]
 
@@ -164,11 +164,12 @@ class AI(object):
             board_sum = 0
             for i in range(10):
                 board_sum += self.count_bin_ones(POS_VALUES[i] & own_chess) * values[i]
-            #move_sum = len(self.bin_available_moves(opo_chess, own_chess)) - len(self.bin_available_moves(own_chess, opo_chess))
-            move_sum = 0
+            move_sum = len(self.bin_available_moves(opo_chess, own_chess)) - len(self.bin_available_moves(own_chess, opo_chess))
+            #move_sum = 0
             return BOARD_WEIGHT_LIST[self.at_state] * board_sum + MOVE_WEIGHT_LIST[self.at_state] * move_sum
 
         def max_value(self, own_chess, opo_chess, alpha, beta, depth):
+            # TODO better time check position
             if depth == DEPTH_LIST[self.at_state] or self.time_out - time.process_time() + self.start_time < 0.005:
                 return self.evaluation(own_chess, opo_chess), None
             movables = self.bin_available_moves(own_chess, opo_chess)
