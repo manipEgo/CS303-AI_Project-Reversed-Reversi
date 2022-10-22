@@ -1,4 +1,5 @@
 from multiprocessing import Queue, Value
+import os
 from random import Random
 from time import time_ns
 import time
@@ -9,7 +10,7 @@ from play import Play, Game_Parameters
 # initial parameters
 STATE_NUM = 4
 COUNT_LIST = [8, 43, 55, 64]
-DEPTH_LIST = [7, 5, 4, 9]
+DEPTH_LIST = [1, 1, 1, 1]
 BOARD_WEIGHT_LIST = [1, 1, 1, 1]
 MOBIL_WEIGHT_LIST = [1, 3, 4, 1]
 VALUES = [-500, 25, -10, -5,
@@ -18,13 +19,13 @@ VALUES = [-500, 25, -10, -5,
                         -1]
 
 # GA parameters
-GENETIC_SIZE = 16
-GENETIC_DEPTH = 5
-GENETIC_REMAIN = 4
+GENETIC_SIZE = 2
+GENETIC_DEPTH = 1
+GENETIC_REMAIN = 1
 
 COUNT_DRIFT = 0
-DEPTH_DRIFT = 0.5
-BOARD_DRIFT = 0
+DEPTH_DRIFT = 0
+BOARD_DRIFT = 10.0
 MOBIL_DRIFT = 10.0
 VALUE_DRIFT = 0
 random = Random(time_ns)
@@ -67,20 +68,20 @@ def generator(baseline, percentage, is_int, non_neg):
                 result[i] = 0
     return result
 
-def display_game(k, depth, black, white):
+def display_game(k, depth):
     #print("\033[2J\033[1;1H")
     print("Timing:", str(time.perf_counter() - start_time) + "s")
     print("Processing:",
           str(depth * (GENETIC_SIZE*GENETIC_SIZE - GENETIC_SIZE) + play_results.qsize()) +
           "/" + str((GENETIC_SIZE*GENETIC_SIZE - GENETIC_SIZE) * GENETIC_DEPTH))
-    #print("Displaying: thread", k)
-    #print("=============================================")
+    print("Displaying: parameters ", k)
+    print("=============================================")
     #print("black:")
-    #print("counts:", count_lists[black])
-    #print("depths:", depth_lists[black])
-    #print("boards:", board_lists[black])
-    #print("mobils:", mobil_lists[black])
-    #print("values:", value_lists[black])
+    print("counts:", count_lists[k])
+    print("depths:", depth_lists[k])
+    print("boards:", board_lists[k])
+    print("mobils:", mobil_lists[k])
+    print("values:", value_lists[k])
     #print("white:")
     #print("counts:", count_lists[white])
     #print("depths:", depth_lists[white])
@@ -109,16 +110,21 @@ if __name__=="__main__":
     # initial
     for item in range(GENETIC_SIZE):
         state_nums.append(STATE_NUM)
-    for item in range(GENETIC_REMAIN):
+    for item in range(GENETIC_REMAIN - 1):
         next_count_lists.append(generator(COUNT_LIST, COUNT_DRIFT, True, True))
-    for item in range(GENETIC_REMAIN):
+    next_count_lists.append(COUNT_LIST)
+    for item in range(GENETIC_REMAIN - 1):
         next_depth_lists.append(generator(DEPTH_LIST, DEPTH_DRIFT, True, True))
-    for item in range(GENETIC_REMAIN):
+    next_depth_lists.append(DEPTH_LIST)
+    for item in range(GENETIC_REMAIN - 1):
         next_board_lists.append(generator(BOARD_WEIGHT_LIST, BOARD_DRIFT, False, False))
-    for item in range(GENETIC_REMAIN):
+    next_board_lists.append(BOARD_WEIGHT_LIST)
+    for item in range(GENETIC_REMAIN - 1):
         next_mobil_lists.append(generator(MOBIL_WEIGHT_LIST, MOBIL_DRIFT, False, True))
-    for item in range(GENETIC_REMAIN):
+    next_mobil_lists.append(MOBIL_WEIGHT_LIST)
+    for item in range(GENETIC_REMAIN - 1):
         next_value_lists.append(generator(VALUES, VALUE_DRIFT, False, False))
+    next_value_lists.append(VALUES)
 
     # steps
     start_time = time.perf_counter()
@@ -187,8 +193,8 @@ if __name__=="__main__":
         all_count = prepare_params.qsize()
         while play_results.qsize() < all_count:
             now_count = play_results.qsize()
-            k = (k + 1) % THREAD_NUM
-            display_game(k, depth, games_black[k].value, games_white[k].value)
+            k = (k + 1) % GENETIC_SIZE
+            display_game(k, depth)
             start_wait = time.perf_counter()
             while(time.perf_counter() - start_wait < 10):
                 pass
@@ -209,6 +215,24 @@ if __name__=="__main__":
             next_board_lists[item] = board_lists[indices[GENETIC_REMAIN - item - 1]]
             next_mobil_lists[item] = mobil_lists[indices[GENETIC_REMAIN - item - 1]]
             next_value_lists[item] = value_lists[indices[GENETIC_REMAIN - item - 1]]
+        
+        # write into files
+        with open("results/result_depth_" + str(depth) + ".txt", "w+") as f:
+            f.write("adaptabilities:" + os.linesep)
+            for item in adaptabilities:
+                f.write(str(item) + "\t")
+            f.write(os.linesep + "======================================" + os.linesep)
+            f.write("remained parameters:" + os.linesep)
+            f.write("count lists:" + os.linesep)
+            f.write(str(next_count_lists) + os.linesep)
+            f.write("depth lists:" + os.linesep)
+            f.write(str(next_depth_lists) + os.linesep)
+            f.write("board lists:" + os.linesep)
+            f.write(str(next_board_lists) + os.linesep)
+            f.write("mobil lists:" + os.linesep)
+            f.write(str(next_mobil_lists) + os.linesep)
+            f.write("value lists:" + os.linesep)
+            f.write(str(next_value_lists) + os.linesep)
 
     print("counts:", count_lists)
     print("depths:", depth_lists)
