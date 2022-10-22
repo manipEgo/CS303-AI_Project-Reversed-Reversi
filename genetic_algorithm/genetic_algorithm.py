@@ -10,18 +10,18 @@ from play import Play, Game_Parameters
 # initial parameters
 STATE_NUM = 4
 COUNT_LIST = [8, 43, 55, 64]
-DEPTH_LIST = [1, 1, 1, 1]
+DEPTH_LIST = [5, 4, 3, 8]
 BOARD_WEIGHT_LIST = [1, 1, 1, 1]
-MOBIL_WEIGHT_LIST = [1, 3, 4, 1]
+MOBIL_WEIGHT_LIST = [1, 3, 25, 1]
 VALUES = [-500, 25, -10, -5,
                 45, -1, -1,
                     -3, -2,
                         -1]
 
 # GA parameters
-GENETIC_SIZE = 2
-GENETIC_DEPTH = 1
-GENETIC_REMAIN = 1
+GENETIC_SIZE = 16
+GENETIC_DEPTH = 8
+GENETIC_REMAIN = 3
 
 COUNT_DRIFT = 0
 DEPTH_DRIFT = 0
@@ -110,21 +110,21 @@ if __name__=="__main__":
     # initial
     for item in range(GENETIC_SIZE):
         state_nums.append(STATE_NUM)
-    for item in range(GENETIC_REMAIN - 1):
-        next_count_lists.append(generator(COUNT_LIST, COUNT_DRIFT, True, True))
     next_count_lists.append(COUNT_LIST)
     for item in range(GENETIC_REMAIN - 1):
-        next_depth_lists.append(generator(DEPTH_LIST, DEPTH_DRIFT, True, True))
+        next_count_lists.append(generator(COUNT_LIST, COUNT_DRIFT, True, True))
     next_depth_lists.append(DEPTH_LIST)
     for item in range(GENETIC_REMAIN - 1):
-        next_board_lists.append(generator(BOARD_WEIGHT_LIST, BOARD_DRIFT, False, False))
+        next_depth_lists.append(generator(DEPTH_LIST, DEPTH_DRIFT, True, True))
     next_board_lists.append(BOARD_WEIGHT_LIST)
     for item in range(GENETIC_REMAIN - 1):
-        next_mobil_lists.append(generator(MOBIL_WEIGHT_LIST, MOBIL_DRIFT, False, True))
+        next_board_lists.append(generator(BOARD_WEIGHT_LIST, BOARD_DRIFT, False, True))
     next_mobil_lists.append(MOBIL_WEIGHT_LIST)
     for item in range(GENETIC_REMAIN - 1):
-        next_value_lists.append(generator(VALUES, VALUE_DRIFT, False, False))
+        next_mobil_lists.append(generator(MOBIL_WEIGHT_LIST, MOBIL_DRIFT, False, True))
     next_value_lists.append(VALUES)
+    for item in range(GENETIC_REMAIN - 1):
+        next_value_lists.append(generator(VALUES, VALUE_DRIFT, False, False))
 
     # steps
     start_time = time.perf_counter()
@@ -154,15 +154,15 @@ if __name__=="__main__":
         
         # new random parameters
         for item in range(GENETIC_REMAIN, GENETIC_SIZE):
-            count_lists.append(generator(COUNT_LIST, COUNT_DRIFT, True, True))
+            count_lists.append(generator(next_count_lists[random.randint(0, GENETIC_REMAIN - 1)], COUNT_DRIFT, True, True))
         for item in range(GENETIC_REMAIN, GENETIC_SIZE):
-            depth_lists.append(generator(DEPTH_LIST, DEPTH_DRIFT, True, True))
+            depth_lists.append(generator(next_depth_lists[random.randint(0, GENETIC_REMAIN - 1)], DEPTH_DRIFT, True, True))
         for item in range(GENETIC_REMAIN, GENETIC_SIZE):
-            board_lists.append(generator(BOARD_WEIGHT_LIST, BOARD_DRIFT, False, False))
+            board_lists.append(generator(next_board_lists[random.randint(0, GENETIC_REMAIN - 1)], BOARD_DRIFT, False, True))
         for item in range(GENETIC_REMAIN, GENETIC_SIZE):
-            mobil_lists.append(generator(MOBIL_WEIGHT_LIST, MOBIL_DRIFT, False, True))
+            mobil_lists.append(generator(next_mobil_lists[random.randint(0, GENETIC_REMAIN - 1)], MOBIL_DRIFT, False, True))
         for item in range(GENETIC_REMAIN, GENETIC_SIZE):
-            value_lists.append(generator(VALUES, VALUE_DRIFT, False, False))
+            value_lists.append(generator(next_value_lists[random.randint(0, GENETIC_REMAIN - 1)], VALUE_DRIFT, False, False))
         
         # push parameters
         for item in range(GENETIC_SIZE):
