@@ -10,9 +10,9 @@ from play import Play, Game_Parameters
 # initial parameters
 STATE_NUM = 4
 COUNT_LIST = [8, 43, 55, 64]
-DEPTH_LIST = [5, 4, 3, 8]
+DEPTH_LIST = [5, 2, 3, 6]
 BOARD_WEIGHT_LIST = [1, 1, 1, 1]
-MOBIL_WEIGHT_LIST = [1, 3, 25, 1]
+MOBIL_WEIGHT_LIST = [1, 3, 10, 1]
 VALUES = [-500, 25, -10, -5,
                 45, -1, -1,
                     -3, -2,
@@ -20,13 +20,13 @@ VALUES = [-500, 25, -10, -5,
 
 # GA parameters
 GENETIC_SIZE = 16
-GENETIC_DEPTH = 8
-GENETIC_REMAIN = 3
+GENETIC_DEPTH = 128
+GENETIC_REMAIN = 4
 
 COUNT_DRIFT = 0
 DEPTH_DRIFT = 0
-BOARD_DRIFT = 10.0
-MOBIL_DRIFT = 10.0
+BOARD_DRIFT = 0.5
+MOBIL_DRIFT = 0.25
 VALUE_DRIFT = 0
 random = Random(time_ns)
 
