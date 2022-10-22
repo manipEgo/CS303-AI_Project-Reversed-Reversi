@@ -38,7 +38,7 @@ STATE_NUM = 4
 COUNT_LIST = [8, 43, 55, 64]
 DEPTH_LIST = [5, 4, 3, 8]
 BOARD_WEIGHT_LIST = [1, 1, 1, 1]
-MOBIL_WEIGHT_LIST = [1, 3, 4, 1]
+MOBIL_WEIGHT_LIST = [1, 3, 25, 1]
 VALUES = np.array([-500, 25, -10, -5,
                         45, -1, -1,
                             -3, -2,
