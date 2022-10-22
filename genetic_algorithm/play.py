@@ -4,12 +4,13 @@ from chess_genetic import AI
 import numpy as np
 
 class Game_Parameters(object):
-    def __init__(self, state, count, depth, board, mobil, value, color):
+    def __init__(self, state, count, depth, board, mobil, cnumb, value, color):
         self.state_tuple = state
         self.count_tuple = count
         self.depth_tuple = depth
         self.board_tuple = board
         self.mobil_tuple = mobil
+        self.cnumb_tuple = cnumb
         self.value_tuple = value
         self.color_tuple = color
 
@@ -24,6 +25,7 @@ class Play(Process):
         self.depth = []
         self.board = []
         self.mobil = []
+        self.cnumb = []
         self.value = []
         self.black = Value
         self.white = Value
@@ -38,6 +40,7 @@ class Play(Process):
         self.depth = new_params.depth_tuple
         self.board = new_params.board_tuple
         self.mobil = new_params.mobil_tuple
+        self.cnumb = new_params.cnumb_tuple
         self.value = new_params.value_tuple
         self.black = new_params.color_tuple[0]
         self.white = new_params.color_tuple[1]
@@ -74,8 +77,8 @@ class Play(Process):
     def run(self):
         while not self.param_queue.empty():
             self.set_parameters()
-            ai_black = AI(8, -1, 5, self.state[0], self.count[0], self.depth[0], self.board[0], self.mobil[0], self.value[0])
-            ai_white = AI(8, 1, 5, self.state[1], self.count[1], self.depth[1], self.board[1], self.mobil[1], self.value[1])
+            ai_black = AI(8, -1, 5, self.state[0], self.count[0], self.depth[0], self.board[0], self.mobil[0], self.cnumb[0], self.value[0])
+            ai_white = AI(8, 1, 5, self.state[1], self.count[1], self.depth[1], self.board[1], self.mobil[1], self.cnumb[1], self.value[1])
             self.chessboard = np.zeros((8, 8), dtype=int)
             turn = -1
             black_dead = False

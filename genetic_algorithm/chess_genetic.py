@@ -34,7 +34,7 @@ BIN2INDEX = {1: (0, 0), 2: (0, 1), 4: (0, 2), 8: (0, 3), 16: (0, 4), 32: (0, 5),
              72057594037927936: (7, 0), 144115188075855872: (7, 1), 288230376151711744: (7, 2), 576460752303423488: (7, 3), 1152921504606846976: (7, 4), 2305843009213693952: (7, 5), 4611686018427387904: (7, 6), 9223372036854775808: (7, 7)}
 
 class AI(object):
-        def __init__(self, chessboard_size, color, time_out, state_num, count_list, depth_list, board_list, move_list, value_list):
+        def __init__(self, chessboard_size, color, time_out, state_num, count_list, depth_list, board_list, move_list, cnum_list, value_list):
             self.chessboard_size = chessboard_size
             self.color = color
             self.time_out = time_out
@@ -51,6 +51,7 @@ class AI(object):
             self.DEPTH_LIST = depth_list
             self.BOARD_WEIGHT_LIST = board_list
             self.MOVE_WEIGHT_LIST = move_list
+            self.CNUMB_WEIGHT_LIST = cnum_list
             self.values = value_list
         
         def bin_to_index(self, bin_pos):
@@ -159,8 +160,8 @@ class AI(object):
             for i in range(10):
                 board_sum += self.count_bin_ones(POS_VALUES[i] & own_chess) * self.values[i]
             move_sum = len(self.bin_available_moves(opo_chess, own_chess)) - len(self.bin_available_moves(own_chess, opo_chess))
-            #move_sum = 0
-            return self.BOARD_WEIGHT_LIST[self.at_state] * board_sum + self.MOVE_WEIGHT_LIST[self.at_state] * move_sum
+            cnum_sum = self.count_bin_ones(opo_chess) - self.count_bin_ones(own_chess)
+            return self.BOARD_WEIGHT_LIST[self.at_state] * board_sum + self.MOVE_WEIGHT_LIST[self.at_state] * move_sum + self.CNUMB_WEIGHT_LIST[self.at_state] * cnum_sum
 
         def bin_flip(self, own_chess, opo_chess, move):
             result_own = own_chess | move

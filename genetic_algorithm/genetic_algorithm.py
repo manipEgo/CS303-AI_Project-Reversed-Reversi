@@ -9,24 +9,26 @@ from play import Play, Game_Parameters
 
 # initial parameters
 STATE_NUM = 4
-COUNT_LIST = [8, 43, 55, 64]
-DEPTH_LIST = [5, 2, 3, 6]
-BOARD_WEIGHT_LIST = [1, 1, 1, 1]
-MOBIL_WEIGHT_LIST = [1, 3, 10, 1]
-VALUES = [-500, 25, -10, -5,
-                45, -1, -1,
-                    -3, -2,
-                        -1]
+COUNT_LIST = [15, 43, 54, 64]
+DEPTH_LIST = [5, 4, 3, 10]
+BOARD_WEIGHT_LIST = [1, 1, 1, 0]
+MOBIL_WEIGHT_LIST = [1, 3, 5, 0]
+CNUMB_WEIGHT_LIST = [0, 0, 0, 1]
+VALUES = np.array([-500, 25, -10, -5,
+                        45, -1, -1,
+                            -3, -2,
+                                -1])
 
 # GA parameters
 GENETIC_SIZE = 16
-GENETIC_DEPTH = 128
-GENETIC_REMAIN = 4
+GENETIC_DEPTH = 256
+GENETIC_REMAIN = 6
 
 COUNT_DRIFT = 0
 DEPTH_DRIFT = 0
 BOARD_DRIFT = 0.5
 MOBIL_DRIFT = 0.25
+CNUMB_DRIFT = 0
 VALUE_DRIFT = 0
 random = Random(time_ns)
 
@@ -39,11 +41,13 @@ count_lists = []
 depth_lists = []
 board_lists = []
 mobil_lists = []
+cnumb_lists = []
 value_lists = []
 next_count_lists = []
 next_depth_lists = []
 next_board_lists = []
 next_mobil_lists = []
+next_cnumb_lists = []
 next_value_lists = []
 adaptabilities = []
 prepare_params = Queue()
@@ -81,6 +85,7 @@ def display_game(k, depth):
     print("depths:", depth_lists[k])
     print("boards:", board_lists[k])
     print("mobils:", mobil_lists[k])
+    print("cnumbs:", cnumb_lists[k])
     print("values:", value_lists[k])
     #print("white:")
     #print("counts:", count_lists[white])
@@ -122,6 +127,9 @@ if __name__=="__main__":
     next_mobil_lists.append(MOBIL_WEIGHT_LIST)
     for item in range(GENETIC_REMAIN - 1):
         next_mobil_lists.append(generator(MOBIL_WEIGHT_LIST, MOBIL_DRIFT, False, True))
+    next_cnumb_lists.append(CNUMB_WEIGHT_LIST)
+    for item in range(GENETIC_REMAIN - 1):
+        next_cnumb_lists.append(generator(CNUMB_WEIGHT_LIST, CNUMB_DRIFT, False, True))
     next_value_lists.append(VALUES)
     for item in range(GENETIC_REMAIN - 1):
         next_value_lists.append(generator(VALUES, VALUE_DRIFT, False, False))
@@ -135,6 +143,7 @@ if __name__=="__main__":
         depth_lists.clear()
         board_lists.clear()
         mobil_lists.clear()
+        cnumb_lists.clear()
         value_lists.clear()
         adaptabilities.clear()
         for item in range(GENETIC_SIZE):
@@ -150,6 +159,8 @@ if __name__=="__main__":
         for item in range(GENETIC_REMAIN):
             mobil_lists.append(next_mobil_lists[item])
         for item in range(GENETIC_REMAIN):
+            cnumb_lists.append(next_cnumb_lists[item])
+        for item in range(GENETIC_REMAIN):
             value_lists.append(next_value_lists[item])
         
         # new random parameters
@@ -161,6 +172,8 @@ if __name__=="__main__":
             board_lists.append(generator(next_board_lists[random.randint(0, GENETIC_REMAIN - 1)], BOARD_DRIFT, False, True))
         for item in range(GENETIC_REMAIN, GENETIC_SIZE):
             mobil_lists.append(generator(next_mobil_lists[random.randint(0, GENETIC_REMAIN - 1)], MOBIL_DRIFT, False, True))
+        for item in range(GENETIC_REMAIN, GENETIC_SIZE):
+            cnumb_lists.append(generator(next_cnumb_lists[random.randint(0, GENETIC_REMAIN - 1)], CNUMB_DRIFT, False, True))
         for item in range(GENETIC_REMAIN, GENETIC_SIZE):
             value_lists.append(generator(next_value_lists[random.randint(0, GENETIC_REMAIN - 1)], VALUE_DRIFT, False, False))
         
@@ -175,6 +188,7 @@ if __name__=="__main__":
                     (depth_lists[item], depth_lists[jack]),
                     (board_lists[item], board_lists[jack]),
                     (mobil_lists[item], mobil_lists[jack]),
+                    (cnumb_lists[item], cnumb_lists[jack]),
                     (value_lists[item], value_lists[jack]),
                     (item, jack))
                 )
@@ -214,6 +228,7 @@ if __name__=="__main__":
             next_depth_lists[item] = depth_lists[indices[GENETIC_REMAIN - item - 1]]
             next_board_lists[item] = board_lists[indices[GENETIC_REMAIN - item - 1]]
             next_mobil_lists[item] = mobil_lists[indices[GENETIC_REMAIN - item - 1]]
+            next_cnumb_lists[item] = cnumb_lists[indices[GENETIC_REMAIN - item - 1]]
             next_value_lists[item] = value_lists[indices[GENETIC_REMAIN - item - 1]]
         
         # write into files
@@ -231,6 +246,8 @@ if __name__=="__main__":
             f.write(str(next_board_lists) + os.linesep)
             f.write("mobil lists:" + os.linesep)
             f.write(str(next_mobil_lists) + os.linesep)
+            f.write("cnumb lists:" + os.linesep)
+            f.write(str(next_cnumb_lists) + os.linesep)
             f.write("value lists:" + os.linesep)
             f.write(str(next_value_lists) + os.linesep)
 
@@ -238,4 +255,5 @@ if __name__=="__main__":
     print("depths:", depth_lists)
     print("boards:", board_lists)
     print("mobils:", mobil_lists)
+    print("cnumbs:", cnumb_lists)
     print("values:", value_lists)
