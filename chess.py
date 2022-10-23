@@ -34,13 +34,13 @@ BIN2INDEX = {1: (0, 0), 2: (0, 1), 4: (0, 2), 8: (0, 3), 16: (0, 4), 32: (0, 5),
              72057594037927936: (7, 0), 144115188075855872: (7, 1), 288230376151711744: (7, 2), 576460752303423488: (7, 3), 1152921504606846976: (7, 4), 2305843009213693952: (7, 5), 4611686018427387904: (7, 6), 9223372036854775808: (7, 7)}
 
 # SUPER PARAMETERS
-STATE_NUM = 4
-COUNT_LIST = [15, 43, 54, 64]
-DEPTH_LIST = [7, 5, 5, 10]
-BOARD_WEIGHT_LIST = [1, 1, 1, 0]
-MOBIL_WEIGHT_LIST = [1, 3, 25, 0]
-CNUMB_WEIGHT_LIST = [0, 0, 0, 1]
-VALUES = np.array([-500, 25, -10, -5,
+STATE_NUM = 5
+COUNT_LIST = [15, 23, 43, 54, 64]
+DEPTH_LIST = [7, 6, 5, 5, 10]
+BOARD_WEIGHT_LIST = [1, 1, 1, 1, 0]
+MOBIL_WEIGHT_LIST = [0, 0, 0, 0, 0]
+CNUMB_WEIGHT_LIST = [0, 0, 0, 0, 1]
+VALUES = np.array([-5000, 25, -10, -5,
                         45, -1, -1,
                             -3, -2,
                                 -1])
@@ -176,9 +176,9 @@ class AI(object):
             board_sum = 0
             for i in range(10):
                 board_sum += self.count_bin_ones(POS_VALUES[i] & own_chess) * VALUES[i]
-            move_sum = len(self.bin_available_moves(opo_chess, own_chess)) - len(self.bin_available_moves(own_chess, opo_chess))
+            #move_sum = len(self.bin_available_moves(opo_chess, own_chess)) - len(self.bin_available_moves(own_chess, opo_chess))
             cnum_sum = self.count_bin_ones(opo_chess) - self.count_bin_ones(own_chess)
-            return BOARD_WEIGHT_LIST[self.at_state] * board_sum + MOBIL_WEIGHT_LIST[self.at_state] * move_sum + CNUMB_WEIGHT_LIST[self.at_state] * cnum_sum
+            return BOARD_WEIGHT_LIST[self.at_state] * board_sum + CNUMB_WEIGHT_LIST[self.at_state] * cnum_sum# + MOBIL_WEIGHT_LIST[self.at_state] * move_sum
 
         def bin_flip(self, own_chess, opo_chess, move):
             result_own = own_chess | move
