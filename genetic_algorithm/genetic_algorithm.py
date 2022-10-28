@@ -12,9 +12,9 @@ STATE_NUM = 4
 COUNT_LIST = [15, 43, 54, 64]
 DEPTH_LIST = [5, 4, 3, 10]
 BOARD_WEIGHT_LIST = [1, 1, 1, 0]
-MOBIL_WEIGHT_LIST = [1, 3, 5, 0]
+MOBIL_WEIGHT_LIST = [0, 0, 0, 0]
 CNUMB_WEIGHT_LIST = [0, 0, 0, 1]
-VALUES = np.array([-500, 25, -10, -5,
+VALUES = np.array([-5000, 25, -10, -5,
                         45, -1, -1,
                             -3, -2,
                                 -1])
@@ -26,10 +26,10 @@ GENETIC_REMAIN = 6
 
 COUNT_DRIFT = 0
 DEPTH_DRIFT = 0
-BOARD_DRIFT = 0.5
-MOBIL_DRIFT = 0.25
+BOARD_DRIFT = 0
+MOBIL_DRIFT = 0
 CNUMB_DRIFT = 0
-VALUE_DRIFT = 0
+VALUE_DRIFT = 0.002
 random = Random(time_ns)
 
 # threading parameters

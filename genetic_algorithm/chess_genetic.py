@@ -159,9 +159,9 @@ class AI(object):
             board_sum = 0
             for i in range(10):
                 board_sum += self.count_bin_ones(POS_VALUES[i] & own_chess) * self.values[i]
-            move_sum = len(self.bin_available_moves(opo_chess, own_chess)) - len(self.bin_available_moves(own_chess, opo_chess))
+            #move_sum = len(self.bin_available_moves(opo_chess, own_chess)) - len(self.bin_available_moves(own_chess, opo_chess))
             cnum_sum = self.count_bin_ones(opo_chess) - self.count_bin_ones(own_chess)
-            return self.BOARD_WEIGHT_LIST[self.at_state] * board_sum + self.MOVE_WEIGHT_LIST[self.at_state] * move_sum + self.CNUMB_WEIGHT_LIST[self.at_state] * cnum_sum
+            return self.BOARD_WEIGHT_LIST[self.at_state] * board_sum + self.CNUMB_WEIGHT_LIST[self.at_state] * cnum_sum# + self.MOVE_WEIGHT_LIST[self.at_state] * move_sum
 
         def bin_flip(self, own_chess, opo_chess, move):
             result_own = own_chess | move
