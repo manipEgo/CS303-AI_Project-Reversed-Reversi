@@ -4,6 +4,8 @@ from chess_genetic import AI
 import numpy as np
 
 class Game_Parameters(object):
+    """Stores all hyper-parameters of an agent"""
+
     def __init__(self, state, count, depth, board, mobil, cnumb, value, color):
         self.state_tuple = state
         self.count_tuple = count
@@ -15,6 +17,8 @@ class Game_Parameters(object):
         self.color_tuple = color
 
 class Play(Process):
+    """Play the game between two agents"""
+
     def __init__(self, processID, param_queue: Queue, result_queue: Queue, black: Value, white: Value):
         super(Play, self).__init__()
         self.processID = processID
@@ -34,6 +38,8 @@ class Play(Process):
         self.turn_time = 0
     
     def set_parameters(self):
+        """read new parameter set from the queuing sets
+        """
         new_params = self.param_queue.get(True)
         self.state = new_params.state_tuple
         self.count = new_params.count_tuple
@@ -75,6 +81,8 @@ class Play(Process):
         #        "/" + str(time.perf_counter() - self.start_time) + "s")
 
     def run(self):
+        """Run games till no more queuing agent parameters
+        """
         while not self.param_queue.empty():
             self.set_parameters()
             ai_black = AI(8, -1, 5, self.state[0], self.count[0], self.depth[0], self.board[0], self.mobil[0], self.cnumb[0], self.value[0])
