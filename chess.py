@@ -6,16 +6,20 @@ import random
 #from numba import jit
 
 # CONSTANTS
+
 COLOR_BLACK = -1
 COLOR_WHITE = 1
 COLOR_NONE = 0
+# boundary positions
 MAX_BIN_CHESS = 1 << 63
 LEFT_BOUND = (1) | (1<<8) | (1<<16) | (1<<24) | (1<<32) | (1<<40) | (1<<48) | (1<<56)
 RIGHT_BOUND = (1<<7) | (1<<15) | (1<<23) | (1<<31) | (1<<39) | (1<<47) | (1<<55) | (1<<63)
 BIN_DIRECT = {"up": 8, "down": 8, "left": 1, "right": 1, "up-left": 9, "up-right": 7, "down-left": 7, "down-right": 9}
+# 10 sets of different weighting positions
 POS_VALUES = [9295429630892703873, 4792111478498951490, 2594215222373842980,
               1729382813125312536, 18577348462920192, 10205666933351424,
               6755684016199680, 39582420959232, 26543503441920, 103481868288]
+# 2-dimensional positions to binary positions
 INDEX2BIN = np.array([[1, 2, 4, 8, 16, 32, 64, 128],
                       [256, 512, 1024, 2048, 4096, 8192, 16384, 32768],
                       [65536, 131072, 262144, 524288, 1048576, 2097152, 4194304, 8388608],
@@ -24,6 +28,7 @@ INDEX2BIN = np.array([[1, 2, 4, 8, 16, 32, 64, 128],
                       [1099511627776, 2199023255552, 4398046511104, 8796093022208, 17592186044416, 35184372088832, 70368744177664, 140737488355328],
                       [281474976710656, 562949953421312, 1125899906842624, 2251799813685248, 4503599627370496, 9007199254740992, 18014398509481984, 36028797018963968],
                       [72057594037927936, 144115188075855872, 288230376151711744, 576460752303423488, 1152921504606846976, 2305843009213693952, 4611686018427387904, 9223372036854775808]])
+# binary positions to 2-dimensional positions
 BIN2INDEX = {1: (0, 0), 2: (0, 1), 4: (0, 2), 8: (0, 3), 16: (0, 4), 32: (0, 5), 64: (0, 6), 128: (0, 7),
              256: (1, 0), 512: (1, 1), 1024: (1, 2), 2048: (1, 3), 4096: (1, 4), 8192: (1, 5), 16384: (1, 6), 32768: (1, 7),
              65536: (2, 0), 131072: (2, 1), 262144: (2, 2), 524288: (2, 3), 1048576: (2, 4), 2097152: (2, 5), 4194304: (2, 6), 8388608: (2, 7),
@@ -33,18 +38,25 @@ BIN2INDEX = {1: (0, 0), 2: (0, 1), 4: (0, 2), 8: (0, 3), 16: (0, 4), 32: (0, 5),
              281474976710656: (6, 0), 562949953421312: (6, 1), 1125899906842624: (6, 2), 2251799813685248: (6, 3), 4503599627370496: (6, 4), 9007199254740992: (6, 5), 18014398509481984: (6, 6), 36028797018963968: (6, 7),
              72057594037927936: (7, 0), 144115188075855872: (7, 1), 288230376151711744: (7, 2), 576460752303423488: (7, 3), 1152921504606846976: (7, 4), 2305843009213693952: (7, 5), 4611686018427387904: (7, 6), 9223372036854775808: (7, 7)}
 
-# SUPER PARAMETERS
+# HYPER PARAMETERS
+
+# number of states
 STATE_NUM = 5
+# chess count boundary between different states
 COUNT_LIST = [15, 23, 43, 54, 64]
+# depth in each state
 DEPTH_LIST = [7, 6, 5, 5, 10]
+# chessboard weighting weights
 BOARD_WEIGHT_LIST = [1, 1, 1, 1, 0]
+# mobility weights
 MOBIL_WEIGHT_LIST = [0, 0, 0, 0, 0]
+# chess number weights
 CNUMB_WEIGHT_LIST = [0, 0, 0, 0, 1]
+# chessboard weighting coefficients
 VALUES = np.array([-5000, 25, -10, -5,
                         45, -1, -1,
                             -3, -2,
                                 -1])
-
 random.seed(0)
 
 class AI(object):
@@ -52,20 +64,49 @@ class AI(object):
             self.chessboard_size = chessboard_size
             self.color = color
             self.time_out = time_out
+            # candidate moves to be read by the game controller
+            # the last element should be considered the final decision
             self.candidate_list = []
             self.candidate_set = []
             self.movable_dict = {}
             self.max_weight = -inf
+            # decides which set of parameters to use
             self.at_state = 0
             self.start_time = 0.0
         
         def bin_to_index(self, bin_pos):
+            """Convert binary position to 2-tuple position
+
+            Args:
+                bin_pos (int): position in binary form
+
+            Returns:
+                (row, col): position tuple
+            """
             return BIN2INDEX[bin_pos]
         
         def index_to_bin(self, row, col):
+            """Convert 2-tuple position to binary position
+
+            Args:
+                row (int): row number, starts from 0
+                col (int): column number, starts from 0
+
+            Returns:
+                int: binary position
+            """
             return (int)(INDEX2BIN[row][col])
         
         def bin_to_board(self, own_chess, opo_chess):
+            """Convert the binary representation of the chessboard to 2-dimensional form
+
+            Args:
+                own_chess (int): binary representation of own chess
+                opo_chess (int): binary representation of rival chess
+
+            Returns:
+                numpy.array: chessboard in 2-dimensional array
+            """
             result_board = np.zeros((self.chessboard_size, self.chessboard_size))
             pointer = 1
             for row in range(self.chessboard_size):
@@ -78,6 +119,14 @@ class AI(object):
             return result_board
         
         def board_to_bin(self, chessboard):
+            """Convert the 2-dimensional chessboard to binary representation
+
+            Args:
+                chessboard (numpy.array): square-shaped 2-dimensional array
+
+            Returns:
+                black_chess (int), white_chess (int): binary representation of the two colored chess
+            """
             black_chess = 0
             white_chess = 0
             b_rows, b_cols = np.where(chessboard == COLOR_BLACK)
@@ -89,6 +138,15 @@ class AI(object):
             return black_chess, white_chess
         
         def bin_available_moves(self, own_chess, opo_chess):
+            """Find all available moves for the own side
+
+            Args:
+                own_chess (int): binary representation of own chess
+                opo_chess (int): binary representation of rival chess
+
+            Returns:
+                list of int: movable positions in binary form
+            """
             if (own_chess, opo_chess) in self.movable_dict:
                 return self.movable_dict[(own_chess, opo_chess)]
             bin_move_list = []
@@ -166,6 +224,14 @@ class AI(object):
             return bin_move_list
         
         def count_bin_ones(self, num):
+            """Count ones, namely the number of chess in a binary representation
+
+            Args:
+                num (int): binary number to count
+
+            Returns:
+                int: number of ones
+            """
             count = 0
             while(num > 0):
                 count += 1
@@ -173,6 +239,15 @@ class AI(object):
             return count
         
         def evaluation(self, own_chess, opo_chess):
+            """Evaluate the given chessboard situation
+
+            Args:
+                own_chess (int): binary representation of own chess
+                opo_chess (int): binary representation of rival chess
+
+            Returns:
+                float: evaluation, the larger the better
+            """
             board_sum = 0
             for i in range(10):
                 board_sum += self.count_bin_ones(POS_VALUES[i] & own_chess) * VALUES[i]
@@ -181,6 +256,16 @@ class AI(object):
             return BOARD_WEIGHT_LIST[self.at_state] * board_sum + CNUMB_WEIGHT_LIST[self.at_state] * cnum_sum# + MOBIL_WEIGHT_LIST[self.at_state] * move_sum
 
         def bin_flip(self, own_chess, opo_chess, move):
+            """Take the given move under the given situation, flip the corresponding chess
+
+            Args:
+                own_chess (int): binary representation of own chess
+                opo_chess (int): binary representation of rival chess
+                move (int): binary representation of the move to take
+
+            Returns:
+                result_own (int), result_opo (int): result binary representations of own & rival chess
+            """
             result_own = own_chess | move
             result_opo = opo_chess
             #1 go up
@@ -283,6 +368,18 @@ class AI(object):
             return result_own, result_opo
 
         def max_value(self, own_chess, opo_chess, alpha, beta, depth):
+            """Max layer of the Minimax Algorithm
+
+            Args:
+                own_chess (int): binary representation of own chess
+                opo_chess (int): binary representation of rival chess
+                alpha (float): alpha of the Minimax Algorithm
+                beta (float): beta of the Minimax Algorithm
+                depth (int): current layer depth
+
+            Returns:
+                step_value (float), step_move (int): maximum evaluation returned & the corresponding move taken
+            """
             # TODO better time check position
             if depth == DEPTH_LIST[self.at_state] or self.time_out - time.process_time() + self.start_time < 0.005:
                 return self.evaluation(own_chess, opo_chess), None
@@ -304,6 +401,18 @@ class AI(object):
             return step_value, step_move
         
         def min_value(self, own_chess, opo_chess, alpha, beta, depth):
+            """Min layer of the Minimax Algorithm
+
+            Args:
+                own_chess (int): binary representation of own chess
+                opo_chess (int): binary representation of rival chess
+                alpha (float): alpha of the Minimax Algorithm
+                beta (float): beta of the Minimax Algorithm
+                depth (int): current layer depth
+
+            Returns:
+                step_value (float), step_move (int): minimum evaluation returned & the corresponding move taken
+            """
             if depth == DEPTH_LIST[self.at_state] or self.time_out - time.process_time() + self.start_time < 0.005:
                 return self.evaluation(own_chess, opo_chess)
             movables = self.bin_available_moves(opo_chess, own_chess)
@@ -325,6 +434,11 @@ class AI(object):
 
         # @jit()
         def go(self, chessboard):
+            """Tell the agent to take a move on the given chessboard
+
+            Args:
+                chessboard (numpy.array): 2-dimensional representation of the chessboard
+            """
             
             # init
             self.start_time = time.process_time()
