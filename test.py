@@ -2,6 +2,11 @@ from chess import AI
 import numpy as np
 
 def display_board(chessboard):
+    """Display the chessboard with print()
+
+    Args:
+        chessboard (numpy.array): 2-dimensional array representing the chessboard
+    """
     for row in chessboard:
         for item in row:
             if item == -1:
@@ -13,6 +18,12 @@ def display_board(chessboard):
         print()
 
 def flip(chessboard, move):
+    """Take the move & flip the chess on board
+
+    Args:
+        chessboard (numpy.array): 2-dimensional array representing the chessboard
+        move (2-tuple): the move to take
+    """
     directions = [(1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1)]
     for direction in directions:
         pointer = (move[0] + direction[0], move[1] + direction[1])
@@ -29,6 +40,12 @@ def flip(chessboard, move):
             pointer = (direction[0] + pointer[0], direction[1] + pointer[1])
 
 def play():
+    """Play a game
+
+    Returns:
+        int: winner, -1 for black, 0 for draw, 1 for white
+    """
+    # agent instants
     ai_black = AI(8, -1, 50)
     ai_white = AI(8, 1, 50)
     chessboard = np.zeros((8, 8), dtype=int)
@@ -37,6 +54,7 @@ def play():
     white_dead = False
     step = []
 
+    # init chessboard
     indices = [(4, 3), (3, 4)]
     for index in indices:
         chessboard[index] = -1
@@ -46,6 +64,7 @@ def play():
     step.append(chessboard.copy())
     display_board(chessboard)
 
+    # play
     while(not(black_dead and white_dead)):
         print("step:", len(step))
         if turn == 1:
@@ -68,6 +87,7 @@ def play():
                 black_dead = True
         step.append(chessboard.copy())
         
+        # uncomment to enable inplace display
         #print("\033[1A\033[1A\033[1A\033[1A\033[1A\033[1A\033[1A\033[1A\033[1A\033[1A", end="")
         display_board(chessboard)
         turn = -turn
