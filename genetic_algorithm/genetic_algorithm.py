@@ -57,8 +57,18 @@ games_black = []
 games_white = []
 start_time = 0
 
-# random drift generator
 def generator(baseline, percentage, is_int, non_neg):
+    """Random genetic drift generator
+
+    Args:
+        baseline (list): drift baseline
+        percentage (float): decide how different the child is from the baseline
+        is_int (bool): returns int if True
+        non_neg (bool): returns nonnegative if True
+
+    Returns:
+        _type_: _description_
+    """
     dist = abs(mean(baseline) * percentage)
     result = baseline.copy()
     for i in range(len(result)):
@@ -73,6 +83,12 @@ def generator(baseline, percentage, is_int, non_neg):
     return result
 
 def display_game(k, depth):
+    """Display the game status
+
+    Args:
+        k (int): number of individual to display
+        depth (int): epochs
+    """
     #print("\033[2J\033[1;1H")
     print("Timing:", str(time.perf_counter() - start_time) + "s")
     print("Processing:",
@@ -97,19 +113,25 @@ def display_game(k, depth):
     #display_board(games[k].chessboard, False)
 
 def display_board(chessboard, clear_board):
-        if clear_board:
-            print("\033[1A\033[1A\033[1A\033[1A\033[1A\033[1A\033[1A\033[1A\033[1A", end="")
-        for row in chessboard:
-            for item in row:
-                if item == -1:
-                    print('●', end=" ")
-                elif item == 1:
-                    print('○', end=" ")
-                else:
-                    print('┼', end=" ")
-            print()
-        #print("\033[K" + "game time:", str(time.perf_counter() - turn_time) +
-        #        "/" + str(time.perf_counter() - start_time) + "s")
+    """Display the chessboard
+
+    Args:
+        chessboard (numpy.array): 2-dimensional array representing the chessboard
+        clear_board (bool): clears the previous chessboard and display inplace if True
+    """
+    if clear_board:
+        print("\033[1A\033[1A\033[1A\033[1A\033[1A\033[1A\033[1A\033[1A\033[1A", end="")
+    for row in chessboard:
+        for item in row:
+            if item == -1:
+                print('●', end=" ")
+            elif item == 1:
+                print('○', end=" ")
+            else:
+                print('┼', end=" ")
+        print()
+    #print("\033[K" + "game time:", str(time.perf_counter() - turn_time) +
+    #        "/" + str(time.perf_counter() - start_time) + "s")
 
 if __name__=="__main__":
     # initial
