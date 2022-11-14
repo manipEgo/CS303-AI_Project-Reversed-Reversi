@@ -24,3 +24,6 @@ Minimax Algorithm with position value, mobility, and number-of-chess weighting. 
 Poorly implemented basic Genetic Algorithm. Multi-Processing supported.
 
 ------
+
+## Docs Folder
+Project introduction, Game rule introduction, and project report. ~~计系课别再惦记你那逼报告了就这点逼算法还要我按论文结构写你以为这是 OI A+B Problem 吗我也没那本事上花里胡哨的写法啊这玩意儿还占这么多分折磨学生写折磨助教读所有人受伤的世界到达了太美丽了计系不觉得这很酷吗所以项目报告什么时候似啊~~
