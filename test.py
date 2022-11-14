@@ -88,7 +88,7 @@ def play():
         step.append(chessboard.copy())
         
         # uncomment to enable inplace display
-        #print("\033[1A\033[1A\033[1A\033[1A\033[1A\033[1A\033[1A\033[1A\033[1A\033[1A", end="")
+        # print("\033[1A\033[1A\033[1A\033[1A\033[1A\033[1A\033[1A\033[1A\033[1A\033[1A\033[1A", end="")
         display_board(chessboard)
         turn = -turn
     
